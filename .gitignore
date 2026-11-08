@@ -8,6 +8,10 @@ venv/
 # Environment
 .env
 
+# Local data
+*.db
+backend/uploads/
+
 # Editors / OS
 .vscode/
 .idea/
