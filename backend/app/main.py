@@ -3,13 +3,18 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.database import Base, engine
+from app.config import settings
+from app.database import Base, SessionLocal, engine
+from app.seed import seed_demo_data
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Create all database tables when the server starts."""
+    """Create all database tables and the demo data when the server starts."""
     Base.metadata.create_all(bind=engine)
+    if settings.seed_demo_data:
+        with SessionLocal() as db:
+            seed_demo_data(db)
     yield
 
 
