@@ -5,6 +5,7 @@ from fastapi import FastAPI
 
 from app.config import settings
 from app.database import Base, SessionLocal, engine
+from app.routers import auth
 from app.seed import seed_demo_data
 
 
@@ -23,6 +24,8 @@ app = FastAPI(
     description="Прототип на система за подаване на сигнали към 112.",
     lifespan=lifespan,
 )
+
+app.include_router(auth.router)
 
 
 @app.get("/health")
