@@ -37,6 +37,9 @@ def client() -> Generator[TestClient, None, None]:
 
     # Imported here, so unit tests that do not use the API do not load it.
     from app.main import app
+    from app.routers.reports import limiter
+
+    limiter.reset()
 
     with TestClient(app) as test_client:
         yield test_client
@@ -44,7 +47,8 @@ def client() -> Generator[TestClient, None, None]:
 
 @pytest.fixture
 def db() -> Generator[Session, None, None]:
-    """A database session on the test database."""
+    """A session on a fresh, empty test database."""
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     with SessionLocal() as session:
         yield session
