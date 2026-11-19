@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import notify
 from app.config import settings
 from app.database import get_db, utcnow
 from app.deps import require_role
@@ -49,6 +50,10 @@ async def send_report(
         db, user, type, lat, lng, description, people_affected, photo_name, now
     )
     db.commit()
+
+    await notify.incident_changed(
+        incident, now, event="incident.created" if is_new else "incident.updated"
+    )
 
     return {
         "report_id": report.id,

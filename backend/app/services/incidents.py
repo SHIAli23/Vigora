@@ -16,9 +16,10 @@ from app.models import (
     Incident,
     IncidentEvent,
     Report,
+    Team,
     User,
 )
-from app.rules import get_type
+from app.rules import TEAM_KIND_LABELS, get_type
 from app.services import reputation, urgency
 from app.services.dedup import find_matching_incident
 
@@ -174,3 +175,17 @@ def incident_detail(incident: Incident, now: datetime) -> dict[str, Any]:
         {"text": event.text, "created_at": iso(event.created_at)} for event in incident.events
     ]
     return detail
+
+
+def team_view(team: Team) -> dict[str, Any]:
+    """A response team as shown on the operator's map."""
+    return {
+        "id": team.id,
+        "name": team.name,
+        "kind": team.kind,
+        "kind_label": TEAM_KIND_LABELS.get(team.kind, team.kind),
+        "lat": team.lat,
+        "lng": team.lng,
+        "status": team.status,
+        "current_incident_id": team.current_incident_id,
+    }
