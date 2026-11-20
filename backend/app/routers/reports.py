@@ -11,15 +11,23 @@ from app.config import settings
 from app.database import get_db, utcnow
 from app.deps import require_role
 from app.models import CITIZEN, Report, User
+from app.realtime import manager
 from app.rules import INCIDENT_TYPES, get_type
 from app.services.geo import is_valid_point
-from app.services.incidents import STATUS_LABELS, iso, submit_report
+from app.services.incidents import STATUS_LABELS, add_event, iso, submit_report
 from app.services.photos import save_photo
 from app.services.ratelimit import RateLimiter
+from app.services.witnesses import create_requests, find_witnesses
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
 
 limiter = RateLimiter(settings.report_limit_count, settings.report_limit_minutes)
+
+
+def _asked_text(count: int) -> str:
+    if count == 1:
+        return "Изпратен въпрос до 1 човек наблизо"
+    return f"Изпратен въпрос до {count} души наблизо"
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -49,17 +57,24 @@ async def send_report(
     report, incident, is_new = submit_report(
         db, user, type, lat, lng, description, people_affected, photo_name, now
     )
+    requests = []
+    if is_new:
+        witnesses = find_witnesses(incident, manager.locations.fresh(now), {user.id})
+        requests = create_requests(db, incident, witnesses, now)
+        if requests:
+            add_event(incident, _asked_text(len(requests)), now)
     db.commit()
 
     await notify.incident_changed(
         incident, now, event="incident.created" if is_new else "incident.updated"
     )
+    await notify.witness_questions(incident, requests)
 
     return {
         "report_id": report.id,
         "incident_id": incident.id,
         "merged": not is_new,
-        "witnesses_asked": 0,
+        "witnesses_asked": len(requests),
         "status": incident.status,
         "status_label": STATUS_LABELS[incident.status],
     }

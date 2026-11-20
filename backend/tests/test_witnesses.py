@@ -6,17 +6,9 @@ from datetime import datetime, timedelta
 from app.database import utcnow
 from app.rules import LOCATION_MAX_AGE_MIN
 from app.services.witnesses import LocationStore
-from tests.conftest import login
+from tests.conftest import login, share_location
 
 NOW = datetime(2026, 1, 1, 12, 0)
-
-
-def share_location(ws, lat, lng):
-    """Send a location, then a ping. The server handles messages in order, so after the pong
-    the location has been processed."""
-    ws.send_json({"type": "location", "lat": lat, "lng": lng})
-    ws.send_json({"type": "ping"})
-    assert ws.receive_json()["event"] == "pong"
 
 
 def connect_witness(client, username="citizen1"):
