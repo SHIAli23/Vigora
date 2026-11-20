@@ -4,8 +4,8 @@ from datetime import datetime
 
 from app.models import Incident, Team, WitnessRequest
 from app.realtime import manager
-from app.rules import WITNESS_ANSWER_WINDOW_MIN, get_type, witness_question_text
-from app.services.incidents import STATUS_LABELS, incident_summary, iso, team_view
+from app.services.incidents import STATUS_LABELS, incident_summary, team_view
+from app.services.witnesses import question_view
 
 
 async def incident_changed(
@@ -38,22 +38,5 @@ async def team_changed(team: Team) -> None:
 
 async def witness_questions(incident: Incident, requests: list[WitnessRequest]) -> None:
     """Ask each nearby citizen whether they can confirm the incident."""
-    incident_type = get_type(incident.type)
     for request in requests:
-        await manager.to_user(
-            request.user_id,
-            "witness.question",
-            {
-                "request_id": request.id,
-                "incident_id": incident.id,
-                "type": incident.type,
-                "type_label": incident_type.label,
-                "question": witness_question_text(incident_type),
-                "violent": incident_type.violent,
-                "distance_m": round(request.distance_m),
-                "lat": incident.lat,
-                "lng": incident.lng,
-                "asked_at": iso(request.asked_at),
-                "expires_in_min": WITNESS_ANSWER_WINDOW_MIN,
-            },
-        )
+        await manager.to_user(request.user_id, "witness.question", question_view(request))
