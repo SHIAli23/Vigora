@@ -1,4 +1,4 @@
-"""Incident lifecycle for new reports, and the incident data sent to the operator."""
+"""Incident lifecycle (new reports, assigning a team, closing) and the operator's views."""
 
 from datetime import datetime
 from typing import Any
@@ -7,12 +7,15 @@ from sqlalchemy.orm import Session
 
 from app.models import (
     ANSWER_YES,
+    OPEN_STATUSES,
     STATUS_ACCEPTED,
     STATUS_ASSIGNED,
     STATUS_FALSE,
     STATUS_NEW,
     STATUS_ON_SCENE,
     STATUS_RESOLVED,
+    TEAM_AVAILABLE,
+    TEAM_BUSY,
     Incident,
     IncidentEvent,
     Report,
@@ -31,6 +34,17 @@ STATUS_LABELS = {
     STATUS_RESOLVED: "Приключен",
     STATUS_FALSE: "Отхвърлен",
 }
+
+# The statuses a team can set, and the incident statuses each one can follow.
+TEAM_TRANSITIONS = {
+    STATUS_ACCEPTED: (STATUS_ASSIGNED,),
+    STATUS_ON_SCENE: (STATUS_ASSIGNED, STATUS_ACCEPTED),
+    STATUS_RESOLVED: (STATUS_ACCEPTED, STATUS_ON_SCENE),
+}
+
+
+class IncidentError(ValueError):
+    """An operator action that is not allowed. The message is shown to the operator."""
 
 
 def add_event(incident: Incident, text: str, now: datetime) -> IncidentEvent:
@@ -114,6 +128,81 @@ def submit_report(
     incident.reports.append(report)
     db.flush()
     return report, incident, is_new
+
+
+def _free_team(incident: Incident) -> Team | None:
+    """Make the incident's assigned team available again. Returns that team, or None."""
+    team = incident.assigned_team
+    if team is None or team.current_incident_id != incident.id:
+        return None
+    team.status = TEAM_AVAILABLE
+    team.current_incident_id = None
+    return team
+
+
+def assign_team(db: Session, incident: Incident, team: Team, now: datetime) -> Team | None:
+    """Send a team to the incident. Returns the team that was assigned before, if any."""
+    if incident.status not in (STATUS_NEW, STATUS_ASSIGNED):
+        raise IncidentError("Сигналът вече е поет от екип")
+    if team.status != TEAM_AVAILABLE:
+        raise IncidentError("Екипът не е свободен")
+    if team.kind not in get_type(incident.type).team_kinds:
+        raise IncidentError("Този вид екип не е подходящ за сигнала")
+
+    previous = _free_team(incident)
+    team.status = TEAM_BUSY
+    team.current_incident_id = incident.id
+    incident.assigned_team = team
+    incident.status = STATUS_ASSIGNED
+    incident.assigned_at = now
+    add_event(incident, f"Назначен: {team.name}", now)
+    db.flush()
+    return previous
+
+
+def _close(incident: Incident, status: str, text: str, now: datetime) -> Team | None:
+    if incident.status not in OPEN_STATUSES:
+        raise IncidentError("Сигналът вече е приключен")
+    incident.status = status
+    incident.closed_at = now
+    add_event(incident, text, now)
+    return _free_team(incident)
+
+
+def resolve_by_operator(db: Session, incident: Incident, now: datetime) -> Team | None:
+    """Close a real incident. Returns the team that was freed, if any."""
+    team = _close(incident, STATUS_RESOLVED, "Приключен от оператор", now)
+    reputation.on_incident_resolved(incident)
+    db.flush()
+    return team
+
+
+def mark_false(db: Session, incident: Incident, now: datetime) -> Team | None:
+    """Close the incident as a false report. Returns the team that was freed, if any."""
+    team = _close(incident, STATUS_FALSE, "Маркиран като фалшив сигнал", now)
+    reputation.on_false_report(incident)
+    db.flush()
+    return team
+
+
+def update_by_team(
+    db: Session, incident: Incident, team: Team, new_status: str, now: datetime
+) -> None:
+    """A team reports its progress on its task. Raises IncidentError."""
+    if incident.assigned_team_id != team.id or team.current_incident_id != incident.id:
+        raise IncidentError("Сигналът не е назначен на вашия екип")
+    if incident.status not in TEAM_TRANSITIONS.get(new_status, ()):
+        raise IncidentError("Невъзможна смяна на статуса")
+
+    incident.status = new_status
+    add_event(incident, f"{team.name}: {STATUS_LABELS[new_status].lower()}", now)
+    if new_status == STATUS_ON_SCENE:
+        team.lat, team.lng = incident.lat, incident.lng
+    elif new_status == STATUS_RESOLVED:
+        incident.closed_at = now
+        _free_team(incident)
+        reputation.on_incident_resolved(incident)
+    db.flush()
 
 
 def iso(dt: datetime | None) -> str | None:

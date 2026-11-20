@@ -1,5 +1,7 @@
 """Request and response shapes for the API."""
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -26,3 +28,11 @@ class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserOut
+
+
+class AssignIn(BaseModel):
+    team_id: int
+
+
+class TeamStatusIn(BaseModel):
+    status: Literal["accepted", "on_scene", "resolved"]
