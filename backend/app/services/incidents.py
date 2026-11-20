@@ -35,6 +35,13 @@ STATUS_LABELS = {
     STATUS_FALSE: "Отхвърлен",
 }
 
+# The statuses a team can set, and the incident statuses each one can follow.
+TEAM_TRANSITIONS = {
+    STATUS_ACCEPTED: (STATUS_ASSIGNED,),
+    STATUS_ON_SCENE: (STATUS_ASSIGNED, STATUS_ACCEPTED),
+    STATUS_RESOLVED: (STATUS_ACCEPTED, STATUS_ON_SCENE),
+}
+
 
 class IncidentError(ValueError):
     """An operator action that is not allowed. The message is shown to the operator."""
@@ -176,6 +183,26 @@ def mark_false(db: Session, incident: Incident, now: datetime) -> Team | None:
     reputation.on_false_report(incident)
     db.flush()
     return team
+
+
+def update_by_team(
+    db: Session, incident: Incident, team: Team, new_status: str, now: datetime
+) -> None:
+    """A team reports its progress on its task. Raises IncidentError."""
+    if incident.assigned_team_id != team.id or team.current_incident_id != incident.id:
+        raise IncidentError("Сигналът не е назначен на вашия екип")
+    if incident.status not in TEAM_TRANSITIONS.get(new_status, ()):
+        raise IncidentError("Невъзможна смяна на статуса")
+
+    incident.status = new_status
+    add_event(incident, f"{team.name}: {STATUS_LABELS[new_status].lower()}", now)
+    if new_status == STATUS_ON_SCENE:
+        team.lat, team.lng = incident.lat, incident.lng
+    elif new_status == STATUS_RESOLVED:
+        incident.closed_at = now
+        _free_team(incident)
+        reputation.on_incident_resolved(incident)
+    db.flush()
 
 
 def iso(dt: datetime | None) -> str | None:
