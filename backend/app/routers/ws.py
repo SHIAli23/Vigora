@@ -4,12 +4,28 @@ import json
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect, status
 
-from app.database import SessionLocal
-from app.models import User
+from app.database import SessionLocal, utcnow
+from app.models import CITIZEN, User
 from app.realtime import Connection, manager
 from app.security import decode_token
+from app.services.geo import is_valid_point
 
 router = APIRouter(tags=["realtime"])
+
+
+def _is_number(value: object) -> bool:
+    # bool is a subclass of int, but true/false is not a coordinate.
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _handle_location(conn: Connection, message: dict) -> None:
+    """Store or remove a citizen's shared location. Invalid points are ignored."""
+    if message.get("type") == "location_off":
+        manager.locations.remove(conn.user_id)
+        return
+    lat, lng = message.get("lat"), message.get("lng")
+    if _is_number(lat) and _is_number(lng) and is_valid_point(lat, lng):
+        manager.locations.update(conn.user_id, lat, lng, utcnow())
 
 
 def _user_from_token(token: str) -> User | None:
@@ -45,8 +61,13 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query("")) -> No
                 message = json.loads(text)
             except json.JSONDecodeError:
                 continue
-            if isinstance(message, dict) and message.get("type") == "ping":
+            if not isinstance(message, dict):
+                continue
+            kind = message.get("type")
+            if kind == "ping":
                 await websocket.send_json({"event": "pong", "data": {}})
+            elif kind in ("location", "location_off") and conn.role == CITIZEN:
+                _handle_location(conn, message)
     except WebSocketDisconnect:
         pass
     finally:

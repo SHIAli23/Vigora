@@ -37,9 +37,11 @@ def client() -> Generator[TestClient, None, None]:
 
     # Imported here, so unit tests that do not use the API do not load it.
     from app.main import app
+    from app.realtime import manager
     from app.routers.reports import limiter
 
     limiter.reset()
+    manager.locations.clear()
 
     with TestClient(app) as test_client:
         yield test_client

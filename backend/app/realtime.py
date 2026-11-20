@@ -9,7 +9,8 @@ from typing import Any
 
 from fastapi import WebSocket
 
-from app.models import OPERATOR
+from app.models import CITIZEN, OPERATOR
+from app.services.witnesses import LocationStore
 
 
 @dataclass(eq=False)
@@ -27,6 +28,7 @@ class ConnectionManager:
 
     def __init__(self) -> None:
         self.connections: list[Connection] = []
+        self.locations = LocationStore()
 
     async def connect(self, conn: Connection) -> None:
         await conn.websocket.accept()
@@ -35,6 +37,9 @@ class ConnectionManager:
     def disconnect(self, conn: Connection) -> None:
         if conn in self.connections:
             self.connections.remove(conn)
+        # A citizen's location is only kept while they have at least one open connection.
+        if conn.role == CITIZEN and not any(c.user_id == conn.user_id for c in self.connections):
+            self.locations.remove(conn.user_id)
 
     async def _send(self, targets: Iterable[Connection], event: str, data: Any) -> None:
         """Send one event to all targets at once. Connections that fail are dropped."""
