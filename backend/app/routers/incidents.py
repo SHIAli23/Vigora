@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db, utcnow
 from app.deps import require_role
 from app.models import OPEN_STATUSES, OPERATOR, Incident, User
-from app.services.incidents import incident_detail, incident_summary
+from app.services.assignment import rank_teams
+from app.services.incidents import incident_detail, incident_summary, team_view
 
 router = APIRouter(prefix="/api/incidents", tags=["incidents"])
 
@@ -64,4 +65,14 @@ def get_incident(
     incident = db.get(Incident, incident_id)
     if incident is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Сигналът не е намерен")
-    return incident_detail(incident, utcnow())
+    detail = incident_detail(incident, utcnow())
+    detail["team_candidates"] = [
+        {
+            **team_view(candidate.team),
+            "distance_m": round(candidate.distance_m),
+            "eta_min": candidate.eta_min,
+            "preferred": candidate.preference == 0,
+        }
+        for candidate in rank_teams(db, incident)
+    ]
+    return detail
