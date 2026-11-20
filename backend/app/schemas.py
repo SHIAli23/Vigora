@@ -26,3 +26,7 @@ class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserOut
+
+
+class AssignIn(BaseModel):
+    team_id: int
