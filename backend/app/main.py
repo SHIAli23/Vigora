@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from app.config import settings
 from app.database import Base, SessionLocal, engine
-from app.routers import auth, meta, reports, ws
+from app.routers import auth, meta, reports, witness, ws
 from app.seed import seed_demo_data
 
 
@@ -28,6 +28,7 @@ app = FastAPI(
 app.include_router(auth.router)
 app.include_router(reports.router)
 app.include_router(meta.router)
+app.include_router(witness.router)
 app.include_router(ws.router)
 
 

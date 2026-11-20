@@ -37,9 +37,11 @@ def client() -> Generator[TestClient, None, None]:
 
     # Imported here, so unit tests that do not use the API do not load it.
     from app.main import app
+    from app.realtime import manager
     from app.routers.reports import limiter
 
     limiter.reset()
+    manager.locations.clear()
 
     with TestClient(app) as test_client:
         yield test_client
@@ -83,3 +85,11 @@ def send_report(client, token, type_="medical", point=POINT, **extra):
     data = {"type": type_, "lat": point[0], "lng": point[1], **extra}
     files = {"photo": photo} if photo else None
     return client.post("/api/reports", data=data, files=files, headers=auth(token))
+
+
+def share_location(ws, lat, lng):
+    """Send a location, then a ping. The server handles messages in order, so after the pong
+    the location has been processed."""
+    ws.send_json({"type": "location", "lat": lat, "lng": lng})
+    ws.send_json({"type": "ping"})
+    assert ws.receive_json()["event"] == "pong"
