@@ -104,6 +104,9 @@
     socket = null;
     if (reportSheet.open) reportSheet.close();
     if (sentSheet.open) sentSheet.close();
+    listRequest++; // drop a list that is still loading
+    reportList.innerHTML = "";
+    reportCount.textContent = "";
     form.reset();
     appScreen.classList.add("hidden");
     loginScreen.classList.remove("hidden");
@@ -341,6 +344,7 @@
       reportSheet.close();
       document.getElementById("sent-text").textContent = sentMessage(result);
       sentSheet.showModal();
+      loadMyReports();
     } catch (e) {
       showReportError(e.message);
     } finally {
@@ -355,6 +359,64 @@
     });
   });
 
+  // ---------- My reports ----------
+
+  var reportList = document.getElementById("my-reports");
+  var reportCount = document.getElementById("my-reports-count");
+  var listRequest = 0; // only the newest load may draw the list
+
+  function statusPillClass(status) {
+    if (status === "resolved") return "pill pill-green";
+    if (status === "false_report") return "pill pill-red";
+    return "pill pill-blue";
+  }
+
+  function reportHtml(report, highlightId) {
+    var type = Vigora.meta && Vigora.meta.byKey[report.type];
+    var meta = Vigora.timeAgo(report.created_at);
+    if (report.confirmations > 0) meta += ", потвърден от " + Vigora.people(report.confirmations);
+    return (
+      '<article class="report-item' + (report.incident_id === highlightId ? " changed" : "") + '"' +
+      (type ? ' style="--type-color:' + Vigora.escapeHtml(type.color) + '"' : "") + ">" +
+      '<div class="report-top">' +
+      '<span class="report-type">' + Vigora.escapeHtml(report.type_label) + "</span>" +
+      '<span class="' + statusPillClass(report.status) + '">' + Vigora.escapeHtml(report.status_label) + "</span>" +
+      "</div>" +
+      (report.description ? '<p class="report-desc">' + Vigora.escapeHtml(report.description) + "</p>" : "") +
+      '<p class="report-meta">' + Vigora.escapeHtml(meta) + "</p>" +
+      "</article>"
+    );
+  }
+
+  // highlightId: the incident whose status just changed, so its card flashes once.
+  async function loadMyReports(highlightId) {
+    var request = ++listRequest;
+    if (!reportList.children.length) reportList.innerHTML = '<p class="hint">Зареждане…</p>';
+    try {
+      var reports = await Vigora.request("/api/reports/mine");
+      try {
+        await Vigora.loadMeta(); // for the type colors; the list also works without them
+      } catch (e) {
+        /* ignore */
+      }
+      if (request !== listRequest) return;
+      reportCount.textContent = reports.length ? String(reports.length) : "";
+      reportList.innerHTML = reports.length
+        ? reports.map(function (r) { return reportHtml(r, highlightId); }).join("")
+        : '<p class="report-empty">Още нямате подадени сигнали.</p>';
+    } catch (e) {
+      if (request !== listRequest) return;
+      reportList.innerHTML = '<p class="error-text">' + Vigora.escapeHtml(e.message) + "</p>";
+    }
+  }
+
+  function onEvent(event, data) {
+    if (event === "report.status") {
+      Vigora.toast("Вашият сигнал: " + data.status_label);
+      loadMyReports(data.incident_id);
+    }
+  }
+
   function startApp() {
     loginScreen.classList.add("hidden");
     appScreen.classList.remove("hidden");
@@ -362,7 +424,8 @@
     loadTypes();
     setConnection(false);
     connLabel.textContent = "Свързване…";
-    socket = Vigora.connect({ onStatus: setConnection });
+    loadMyReports();
+    socket = Vigora.connect({ onStatus: setConnection, onEvent: onEvent });
     locate();
   }
 
