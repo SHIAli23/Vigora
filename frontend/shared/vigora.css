@@ -27,6 +27,11 @@
   --orange-soft: rgba(255, 107, 26, 0.14);
   --orange-glow: rgba(255, 107, 26, 0.45);
 
+  /* Second accent: teal, for "ready / found / connected" states. */
+  --teal: #2ed3b7;
+  --teal-bright: #5eead4;
+  --teal-soft: rgba(46, 211, 183, 0.14);
+
   /* Status colors. Red only for emergencies and errors. */
   --red: #f04438;
   --red-soft: rgba(240, 68, 56, 0.15);
@@ -38,13 +43,13 @@
   --green-soft: rgba(60, 207, 122, 0.14);
 
   --radius: 8px;
-  --radius-lg: 14px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
 
-  /* Depth: a light top edge, a dark drop shadow and, for accents, an orange glow. */
+  /* Depth: a light top edge and a dark drop shadow. */
   --edge: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   --shadow: var(--edge), 0 1px 2px rgba(0, 0, 0, 0.6), 0 12px 32px rgba(0, 0, 0, 0.45);
-  --shadow-lift: var(--edge), 0 2px 4px rgba(0, 0, 0, 0.6), 0 24px 48px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(255, 107, 26, 0.25), 0 12px 40px -8px var(--orange-glow);
+  --shadow-lift: var(--edge), 0 2px 4px rgba(0, 0, 0, 0.6), 0 24px 48px rgba(0, 0, 0, 0.55);
 
   --font: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-display: "Unbounded", "Onest", system-ui, sans-serif;
@@ -73,12 +78,8 @@ body {
   line-height: 1.5;
   color: var(--ink);
   background-color: var(--canvas);
-  /* A warm glow from the top and a faint grid, like a circuit board. */
-  background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255, 107, 26, 0.16), transparent 70%),
-    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-  background-size: 100% 100%, 48px 48px, 48px 48px;
+  /* One soft warm light in a corner; everything else stays flat black. */
+  background-image: radial-gradient(ellipse 60% 40% at 85% -5%, rgba(255, 107, 26, 0.09), transparent 70%);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
 }
@@ -91,9 +92,10 @@ body {
 h1,
 h2,
 h3 {
-  line-height: 1.2;
+  line-height: 1.15;
   margin: 0 0 0.5em;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  letter-spacing: -0.025em;
 }
 
 a {
@@ -111,11 +113,31 @@ a {
   color: var(--ink);
 }
 
-/* The "o" glow is optional: <span class="wordmark">Vig<em>o</em>ra</span> */
+/* An orange "o" is optional: <span class="wordmark">Vig<em>o</em>ra</span> */
 .wordmark em {
   font-style: normal;
   color: var(--orange);
-  text-shadow: 0 0 18px var(--orange-glow);
+}
+
+/* A small label with a dot, used above headings: <span class="eyebrow">Как работи</span> */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--orange);
 }
 
 /* A glass card with depth, used by the login card and the apps. */
@@ -135,22 +157,22 @@ a {
   justify-content: center;
   gap: 8px;
   min-height: 44px;
-  padding: 10px 18px;
+  padding: 10px 20px;
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  background: linear-gradient(180deg, var(--surface-3), var(--surface-2));
+  border-radius: 999px;
+  background: var(--surface-2);
   color: var(--ink);
   font: inherit;
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  box-shadow: var(--edge), 0 1px 2px rgba(0, 0, 0, 0.5);
-  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.2s, transform 0.12s;
+  box-shadow: var(--edge);
+  transition: background-color 0.15s, border-color 0.15s, transform 0.12s;
 }
 
 .btn:hover {
   border-color: rgba(255, 255, 255, 0.28);
-  transform: translateY(-1px);
+  background: var(--surface-3);
 }
 
 .btn:active {
@@ -165,24 +187,27 @@ a {
 }
 
 .btn-primary {
-  border-color: rgba(255, 160, 100, 0.5);
-  background: linear-gradient(180deg, var(--orange-bright), var(--orange) 45%, var(--orange-deep));
-  color: #160800;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -2px 0 rgba(0, 0, 0, 0.18),
-    0 6px 20px -6px var(--orange-glow), 0 1px 2px rgba(0, 0, 0, 0.5);
+  border-color: var(--orange);
+  background: var(--orange);
+  color: #120600;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 8px 24px -12px var(--orange-glow);
 }
 
 .btn-primary:hover {
-  border-color: rgba(255, 190, 140, 0.7);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -2px 0 rgba(0, 0, 0, 0.18),
-    0 10px 30px -6px var(--orange-glow), 0 1px 2px rgba(0, 0, 0, 0.5);
+  border-color: var(--orange-bright);
+  background: var(--orange-bright);
 }
 
 .btn-danger {
-  border-color: rgba(255, 140, 130, 0.45);
-  background: linear-gradient(180deg, #ff5b4f, var(--red) 50%, #c8291d);
+  border-color: var(--red);
+  background: var(--red);
   color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 6px 20px -6px rgba(240, 68, 56, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 8px 24px -12px rgba(240, 68, 56, 0.7);
+}
+
+.btn-danger:hover {
+  border-color: #ff5b4f;
+  background: #ff5b4f;
 }
 
 .btn-quiet {
@@ -225,11 +250,10 @@ a {
   min-height: 44px;
   padding: 10px 12px;
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  background: rgba(0, 0, 0, 0.45);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
   color: var(--ink);
   font: inherit;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
@@ -248,7 +272,7 @@ a {
 .field select:focus {
   border-color: var(--orange);
   outline: none;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4), 0 0 0 3px var(--orange-soft);
+  box-shadow: 0 0 0 3px var(--orange-soft);
 }
 
 .hint {
@@ -296,6 +320,12 @@ a {
   color: var(--orange-bright);
 }
 
+.pill-teal {
+  border-color: rgba(46, 211, 183, 0.35);
+  background: var(--teal-soft);
+  color: var(--teal-bright);
+}
+
 .pill-blue {
   border-color: rgba(91, 155, 255, 0.3);
   background: var(--blue-soft);
@@ -324,12 +354,11 @@ a {
   width: 100%;
   max-width: 400px;
   margin: 0 auto;
-  padding: 32px 28px;
-  background: linear-gradient(180deg, rgba(30, 30, 34, 0.92), rgba(16, 16, 18, 0.92));
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow), 0 40px 80px -30px rgba(255, 107, 26, 0.3);
-  backdrop-filter: blur(12px);
+  padding: 36px 28px 28px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow);
   animation: vigora-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -341,8 +370,7 @@ a {
   left: 20%;
   right: 20%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--orange), transparent);
-  box-shadow: 0 0 12px var(--orange);
+  background: linear-gradient(90deg, transparent, rgba(255, 107, 26, 0.7), transparent);
 }
 
 .login-card .wordmark {
@@ -355,10 +383,7 @@ a {
   text-align: center;
   color: var(--ink-soft);
   margin: 0 0 26px;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 15px;
 }
 
 .login-card .error-text {
@@ -395,16 +420,14 @@ a {
 }
 
 .demo-list button:hover {
-  border-color: var(--orange);
-  background: var(--orange-soft);
+  border-color: rgba(255, 107, 26, 0.6);
   color: var(--orange-bright);
-  box-shadow: 0 0 16px -4px var(--orange-glow);
 }
 
 @keyframes vigora-rise {
   from {
     opacity: 0;
-    transform: translateY(16px) rotateX(8deg);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -431,13 +454,13 @@ a {
 }
 
 .conn.online::before {
-  background: var(--green);
-  box-shadow: 0 0 0 3px var(--green-soft), 0 0 10px var(--green);
+  background: var(--teal);
+  box-shadow: 0 0 0 3px var(--teal-soft);
 }
 
 .conn.offline::before {
   background: var(--red);
-  box-shadow: 0 0 0 3px var(--red-soft), 0 0 10px var(--red);
+  box-shadow: 0 0 0 3px var(--red-soft);
 }
 
 /* ---------- Toast ---------- */
@@ -451,7 +474,7 @@ a {
   padding: 12px 18px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
-  background: linear-gradient(180deg, var(--surface-3), var(--surface-2));
+  background: var(--surface-2);
   color: var(--ink);
   font-weight: 500;
   box-shadow: var(--shadow);
@@ -460,8 +483,8 @@ a {
 }
 
 .toast.error {
-  border-color: rgba(255, 140, 130, 0.4);
-  background: linear-gradient(180deg, #ff5b4f, #c8291d);
+  border-color: var(--red);
+  background: var(--red);
   color: #fff;
 }
 
@@ -563,7 +586,7 @@ a {
   color: var(--orange-bright);
   font-size: 11px;
   font-weight: 700;
-  box-shadow: 0 0 10px -2px var(--orange-glow), 0 2px 4px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
 .marker-team.busy {

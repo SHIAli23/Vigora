@@ -72,11 +72,92 @@
 
     <main class="app-main">
       <h1 id="greeting" class="greeting">Какво се случва?</h1>
+
+      <section class="status-stage" aria-label="Състояние">
+        <div class="status-card tilt" id="status-card" data-state="pending">
+          <div class="status-row">
+            <span class="status-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+              <i class="ping"></i>
+            </span>
+            <span class="status-text">
+              <small>Вашето местоположение</small>
+              <b id="loc-text">Търсим…</b>
+            </span>
+          </div>
+          <div class="status-foot">
+            <span class="status-chip" id="loc-chip">GPS</span>
+            <span class="status-chip status-chip-live">Директно към 112</span>
+          </div>
+        </div>
+      </section>
+
       <p class="hint">Изберете вида на сигнала. Ще го видят операторите на 112 веднага.</p>
 
       <div id="type-grid" class="type-grid" aria-label="Вид на сигнала"></div>
     </main>
   </div>
+
+  <!-- Report sheet -->
+  <dialog id="report-sheet" class="sheet" aria-labelledby="report-title">
+    <form id="report-form" class="sheet-body" novalidate>
+      <div class="sheet-head">
+        <span id="report-icon" class="type-icon sheet-icon" aria-hidden="true"></span>
+        <h2 id="report-title" class="sheet-title">Сигнал</h2>
+        <button type="button" class="sheet-close" data-close aria-label="Затвори">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+
+      <a id="report-danger" class="danger-line hidden" href="tel:112">
+        Ако някой е в опасност сега — обадете се на 112
+      </a>
+
+      <div class="field">
+        <span class="field-label">Къде е?</span>
+        <div id="report-map" class="report-map" aria-label="Карта. Преместете маркера на мястото на случая."></div>
+        <span class="hint" id="report-place">Плъзнете маркера или докоснете картата.</span>
+      </div>
+
+      <div class="field">
+        <label for="report-description">Какво виждате?</label>
+        <textarea id="report-description" name="description" maxlength="500" rows="3"
+                  placeholder="Напр. „Мъж е паднал на тротоара и не отговаря“"></textarea>
+        <span class="hint counter"><span id="report-count">0</span>/500</span>
+      </div>
+
+      <div class="field">
+        <span class="field-label" id="people-label">Колко души са засегнати?</span>
+        <div class="stepper" role="group" aria-labelledby="people-label">
+          <button type="button" class="stepper-btn" id="people-minus" aria-label="По-малко">−</button>
+          <output id="people-value" aria-live="polite">0</output>
+          <button type="button" class="stepper-btn" id="people-plus" aria-label="Повече">+</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="report-photo">Снимка <span class="hint">— по желание, само от безопасно място</span></label>
+        <input id="report-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp"
+               capture="environment" class="file-input">
+      </div>
+
+      <p id="report-error" class="error-text hidden" role="alert"></p>
+
+      <button type="submit" class="btn btn-danger btn-block btn-send" id="report-submit">Изпрати сигнала</button>
+    </form>
+  </dialog>
+
+  <!-- Sent confirmation -->
+  <dialog id="sent-sheet" class="sheet sheet-small" aria-labelledby="sent-title">
+    <div class="sheet-body sent-body">
+      <div class="sent-check" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+      </div>
+      <h2 id="sent-title" class="sheet-title">Сигналът е изпратен</h2>
+      <p id="sent-text" class="sent-text"></p>
+      <button type="button" class="btn btn-primary btn-block" data-close>Добре</button>
+    </div>
+  </dialog>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
