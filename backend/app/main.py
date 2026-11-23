@@ -2,6 +2,8 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse, RedirectResponse, Response
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import Base, SessionLocal, engine
@@ -37,3 +39,20 @@ app.include_router(ws.router)
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/", include_in_schema=False)
+def home() -> Response:
+    """The home page with links to the three apps, or the API docs if there is no frontend."""
+    index = settings.frontend_dir / "index.html"
+    if index.is_file():
+        return FileResponse(index)
+    return RedirectResponse("/docs")
+
+
+# The frontends are plain files. A folder that does not exist is skipped, so the API also
+# runs without them. Mounted last, so they never hide an API route.
+for _folder in ("shared", "citizen", "operator", "team"):
+    _path = settings.frontend_dir / _folder
+    if _path.is_dir():
+        app.mount(f"/{_folder}", StaticFiles(directory=_path, html=True), name=_folder)

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vigora</title>
+  <link rel="stylesheet" href="/shared/vigora.css">
+  <style>
+    .home {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 56px 16px 40px;
+    }
+    .home .wordmark {
+      font-size: 44px;
+      margin: 0 0 8px;
+    }
+    .home .lead {
+      font-size: 18px;
+      color: var(--ink-soft);
+      margin: 0 0 32px;
+      max-width: 600px;
+    }
+    .apps {
+      display: grid;
+      gap: 14px;
+    }
+    .app-link {
+      display: block;
+      padding: 22px 24px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      color: var(--ink);
+      text-decoration: none;
+      box-shadow: var(--shadow);
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    .app-link:hover {
+      border-color: var(--ink-faint);
+      transform: translateY(-1px);
+    }
+    .app-link strong {
+      display: block;
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+    .app-link span {
+      color: var(--ink-soft);
+    }
+    .app-link strong::after {
+      content: " →";
+      color: var(--ink-faint);
+    }
+    .note {
+      margin-top: 32px;
+      padding: 14px 18px;
+      border-radius: var(--radius);
+      background: var(--amber-soft);
+      color: var(--ink);
+      font-size: 15px;
+    }
+  </style>
+</head>
+<body data-app="home">
+  <main class="home">
+    <h1 class="wordmark">Vigora</h1>
+    <p class="lead">
+      Граждани подават сигнали за спешни случаи, операторът на 112 вижда потвърдените инциденти
+      на картата и изпраща най-близкия подходящ екип.
+    </p>
+
+    <nav class="apps" aria-label="Приложения">
+      <a class="app-link" href="/citizen/">
+        <strong>Граждани</strong>
+        <span>Подайте сигнал с местоположение и снимка и потвърдете инциденти около вас.</span>
+      </a>
+      <a class="app-link" href="/operator/">
+        <strong>Оператор 112</strong>
+        <span>Карта на инцидентите по спешност, свидетели и възлагане на екипи.</span>
+      </a>
+      <a class="app-link" href="/team/">
+        <strong>Екипи</strong>
+        <span>Приемете задачата, вижте адреса и обновявайте статуса си на място.</span>
+      </a>
+    </nav>
+
+    <p class="note">
+      Това е прототип и <strong>не замества</strong> телефон 112. При реална опасност звъннете на 112.
+      Описание на API: <a href="/docs">/docs</a>.
+    </p>
+  </main>
+</body>
+</html>
