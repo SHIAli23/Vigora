@@ -1,0 +1,1322 @@
+/* Citizen app. Mobile first, never wider than 640 px. */
+
+.mode-toggle {
+  margin-top: 8px;
+  font-size: 15px;
+}
+
+/* ---------- Emergency call bar (red: emergencies only) ---------- */
+
+.call-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 46px;
+  padding: 8px 16px;
+  padding-top: max(8px, env(safe-area-inset-top));
+  overflow: hidden;
+  background: linear-gradient(90deg, #d92d20, #f04438 50%, #d92d20);
+  color: #fff;
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: none;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25), 0 8px 24px -12px rgba(240, 68, 56, 0.8);
+}
+
+/* A slow light that passes over the bar. */
+.call-bar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -40%;
+  width: 40%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+  animation: shine 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.call-bar:hover {
+  background: #e2392d;
+}
+
+@keyframes shine {
+  0%, 60% { transform: translateX(0); }
+  100% { transform: translateX(350%); }
+}
+
+.call-pill {
+  flex: none;
+  padding: 1px 12px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--red);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+/* ---------- Header ---------- */
+
+.app-header-wrap {
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(18, 18, 20, 0.85), rgba(10, 10, 12, 0.55));
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+/* ---------- Step labels: 01, 02, 03 ---------- */
+
+.step-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.step-label span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid rgba(255, 107, 26, 0.35);
+  border-radius: 999px;
+  background: var(--orange-soft);
+  color: var(--orange-bright);
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+/* A thin line from the label to the right edge. */
+.step-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--line-strong), transparent);
+}
+
+.step-label-gap {
+  margin-top: 40px;
+  margin-bottom: 12px;
+}
+
+.app-header,
+.app-main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.app-header .wordmark {
+  font-size: 19px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.app-header .btn-quiet {
+  min-height: 38px;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  font-size: 14px;
+}
+
+/* ---------- Page lights ---------- */
+
+/* Three soft lights (orange, teal and a little violet) that drift slowly behind everything,
+   and a fine dot grid that fades out toward the bottom. */
+body[data-app="citizen"]::before,
+body[data-app="citizen"]::after {
+  content: "";
+  position: fixed;
+  pointer-events: none;
+  z-index: -1;
+}
+
+body[data-app="citizen"]::before {
+  inset: -20%;
+  background:
+    radial-gradient(28% 24% at 82% 12%, rgba(255, 107, 26, 0.2), transparent 70%),
+    radial-gradient(26% 22% at 10% 42%, rgba(46, 211, 183, 0.11), transparent 70%),
+    radial-gradient(30% 26% at 70% 78%, rgba(139, 92, 246, 0.1), transparent 70%);
+  filter: blur(20px);
+  animation: aurora 22s ease-in-out infinite alternate;
+}
+
+body[data-app="citizen"]::after {
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+  -webkit-mask-image: linear-gradient(180deg, #000, transparent 55%);
+  mask-image: linear-gradient(180deg, #000, transparent 55%);
+}
+
+@keyframes aurora {
+  from { transform: translate3d(0, 0, 0) rotate(0deg); }
+  to { transform: translate3d(-4%, 3%, 0) rotate(8deg); }
+}
+
+/* ---------- Radar: rings spreading from a red dot, on a tilted plane ---------- */
+
+.radar {
+  --radar: var(--orange);
+  position: relative;
+  width: 160px;
+  height: 92px;
+  margin: -6px auto 8px;
+  perspective: 420px;
+  pointer-events: none;
+}
+
+.radar-plane {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 160px;
+  height: 160px;
+  margin: -80px 0 0 -80px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--radar) 22%, transparent), transparent 62%),
+    repeating-radial-gradient(circle, transparent 0 19px, rgba(255, 255, 255, 0.05) 19px 20px);
+  transform: rotateX(64deg);
+}
+
+.radar-plane i {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--radar);
+  border-radius: 50%;
+  opacity: 0;
+  animation: ripple 3.6s cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
+}
+
+.radar-plane i:nth-child(2) { animation-delay: 1.2s; }
+.radar-plane i:nth-child(3) { animation-delay: 2.4s; }
+
+.radar-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, color-mix(in srgb, var(--radar) 45%, transparent), transparent 22%);
+  animation: sweep 4.5s linear infinite;
+}
+
+/* The red dot floats above the plane and casts a shadow on it. */
+.radar-core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  margin: -20px 0 0 -9px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ff9a90, #f04438 55%, #9e1a12);
+  box-shadow:
+    0 0 0 5px rgba(240, 68, 56, 0.16),
+    0 0 26px 6px rgba(240, 68, 56, 0.5),
+    0 14px 10px -6px rgba(0, 0, 0, 0.9);
+  animation: bob 3.6s ease-in-out infinite;
+}
+
+@keyframes ripple {
+  0% { transform: scale(0.12); opacity: 0; }
+  12% { opacity: 0.9; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+@keyframes sweep {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes bob {
+  50% { transform: translateY(-5px); }
+}
+
+.radar-login {
+  transform: translateZ(40px);
+}
+
+/* ---------- Login: a card that tilts toward the pointer ---------- */
+
+.login-page .login-card {
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 0.25s ease-out;
+}
+
+.login-page .login-card .wordmark {
+  transform: translateZ(30px);
+}
+
+/* ---------- Home ---------- */
+
+.app-main {
+  padding-top: 32px;
+  padding-bottom: 40px;
+}
+
+.greeting {
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  margin-bottom: 18px;
+}
+
+.greeting .name {
+  color: var(--orange);
+}
+
+.app-main > .hint {
+  margin: 0 0 18px;
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+
+/* Anything with .tilt follows the pointer. app.js sets --rx, --ry, --mx and --my. */
+.tilt {
+  --rx: 0deg;
+  --ry: 0deg;
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  transform-style: preserve-3d;
+  transition: transform 0.25s ease-out;
+}
+
+/* ---------- Status card ---------- */
+
+.status-stage {
+  perspective: 900px;
+  margin-bottom: 26px;
+}
+
+.status-card {
+  position: relative;
+  padding: 18px;
+  border-radius: 22px;
+  /* A gradient border, orange to teal, drawn with two backgrounds. */
+  border: 1px solid transparent;
+  background:
+    linear-gradient(160deg, #18181b, #0e0e10) padding-box,
+    linear-gradient(130deg, rgba(255, 107, 26, 0.7), rgba(255, 255, 255, 0.08) 45%, rgba(46, 211, 183, 0.7)) border-box;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 30px 50px -24px rgba(0, 0, 0, 0.9),
+    0 20px 40px -30px rgba(46, 211, 183, 0.5);
+  animation: card-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+/* A light reflex that moves with the tilt. */
+.status-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(300px circle at var(--mx, 80%) var(--my, 0%), rgba(255, 255, 255, 0.07), transparent 60%);
+  pointer-events: none;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-right: 64px;
+  transform: translateZ(28px);
+}
+
+/* A small radar in the top right corner: amber while looking, teal once the place is known. */
+.radar-status {
+  --radar: var(--amber);
+  position: absolute;
+  top: 4px;
+  right: 0;
+  width: 110px;
+  height: 76px;
+  margin: 0;
+  transform: translateZ(18px) scale(0.72);
+  transform-origin: 100% 0;
+}
+
+.status-card[data-state="found"] .radar-status {
+  --radar: var(--teal);
+}
+
+/* Without a location there is nothing to sweep. */
+.status-card[data-state="off"] .radar-plane i,
+.status-card[data-state="off"] .radar-sweep {
+  animation: none;
+  opacity: 0;
+}
+
+.status-icon {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(160deg, #2a2a2f, #141417);
+  color: var(--ink-soft);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset, 0 10px 18px -8px rgba(0, 0, 0, 0.9);
+  transition: color 0.3s, background 0.3s, border-color 0.3s;
+}
+
+.status-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.status-icon .ping {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid #121214;
+  background: var(--ink-faint);
+}
+
+.status-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.status-text small {
+  color: var(--ink-faint);
+  font-size: 13px;
+}
+
+.status-text b {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.status-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  transform: translateZ(14px);
+}
+
+.status-chip {
+  padding: 4px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-chip-live {
+  border-color: rgba(255, 107, 26, 0.35);
+  background: var(--orange-soft);
+  color: var(--orange-bright);
+}
+
+/* Location found: teal. */
+.status-card[data-state="found"] .status-icon {
+  border-color: rgba(46, 211, 183, 0.45);
+  background: linear-gradient(160deg, rgba(46, 211, 183, 0.28), rgba(46, 211, 183, 0.06));
+  color: var(--teal-bright);
+}
+
+.status-card[data-state="found"] .ping {
+  background: var(--teal);
+  animation: ping 2s ease-out infinite;
+}
+
+.status-card[data-state="found"] #loc-chip {
+  border-color: rgba(46, 211, 183, 0.35);
+  background: var(--teal-soft);
+  color: var(--teal-bright);
+}
+
+/* Still looking: the dot blinks. */
+.status-card[data-state="pending"] .ping {
+  background: var(--amber);
+  animation: blink 1.2s ease-in-out infinite;
+}
+
+/* Not allowed: amber, the citizen marks the place by hand. */
+.status-card[data-state="off"] .ping {
+  background: var(--amber);
+}
+
+.status-card[data-state="off"] #loc-chip {
+  border-color: rgba(253, 176, 34, 0.3);
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+@keyframes ping {
+  0% { box-shadow: 0 0 0 0 rgba(46, 211, 183, 0.6); }
+  100% { box-shadow: 0 0 0 10px rgba(46, 211, 183, 0); }
+}
+
+@keyframes blink {
+  50% { opacity: 0.35; }
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) rotateX(18deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- Type tiles: physical keys ---------- */
+
+.type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  perspective: 1000px;
+}
+
+.type-tile {
+  --rx: 0deg;
+  --ry: 0deg;
+  --lift: 0px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px;
+  min-height: 138px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 20px;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--type-color) 14%, transparent), transparent 55%),
+    linear-gradient(170deg, #1b1b1f, #111113);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transform: translateY(var(--lift)) rotateX(var(--rx)) rotateY(var(--ry));
+  /* The stacked shadows draw the thick edge of the key. */
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.07) inset,
+    0 1px 0 #242428,
+    0 2px 0 #1f1f23,
+    0 3px 0 #1a1a1d,
+    0 4px 0 #161619,
+    0 5px 0 #121215,
+    0 16px 24px -8px rgba(0, 0, 0, 0.85);
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, border-color 0.2s;
+  animation: tile-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+/* A light reflex that follows the pointer. */
+.type-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(180px circle at var(--mx, 50%) var(--my, 0%), rgba(255, 255, 255, 0.08), transparent 65%);
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+}
+
+.type-tile:hover,
+.type-tile:focus-visible {
+  --lift: -3px;
+  border-color: color-mix(in srgb, var(--type-color) 55%, transparent);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.09) inset,
+    0 1px 0 #242428,
+    0 2px 0 #1f1f23,
+    0 3px 0 #1a1a1d,
+    0 4px 0 #161619,
+    0 5px 0 #121215,
+    0 6px 0 #0f0f11,
+    0 8px 0 #0c0c0e,
+    0 26px 36px -12px rgba(0, 0, 0, 0.9),
+    0 22px 40px -24px var(--type-color);
+}
+
+.type-tile:hover::after {
+  opacity: 1;
+}
+
+/* Pressed: the key sinks into its edge. */
+.type-tile:active {
+  --lift: 4px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 1px 0 #1a1a1d,
+    0 6px 12px -6px rgba(0, 0, 0, 0.8);
+  transition-duration: 0.06s;
+}
+
+.type-tile:nth-child(2) { animation-delay: 0.04s; }
+.type-tile:nth-child(3) { animation-delay: 0.08s; }
+.type-tile:nth-child(4) { animation-delay: 0.12s; }
+.type-tile:nth-child(5) { animation-delay: 0.16s; }
+.type-tile:nth-child(6) { animation-delay: 0.2s; }
+
+@keyframes tile-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) rotateX(-20deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The icon floats above the key. */
+.type-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border: 1px solid color-mix(in srgb, var(--type-color) 45%, transparent);
+  border-radius: 13px;
+  background: linear-gradient(160deg,
+    color-mix(in srgb, var(--type-color) 34%, transparent),
+    color-mix(in srgb, var(--type-color) 8%, transparent));
+  color: color-mix(in srgb, var(--type-color) 45%, white);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 10px 18px -8px color-mix(in srgb, var(--type-color) 80%, black);
+  font-size: 22px;
+  line-height: 1;
+  transform: translateZ(26px);
+  transition: transform 0.25s ease-out;
+}
+
+.type-tile:hover .type-icon {
+  transform: translateZ(40px) scale(1.04);
+}
+
+.type-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.type-label {
+  transform: translateZ(18px);
+}
+
+.type-urgent {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #ff7a70;
+  font-size: 12px;
+  font-weight: 600;
+  transform: translateZ(20px);
+}
+
+.type-urgent::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 0 3px var(--red-soft);
+}
+
+.grid-message {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+@media (min-width: 480px) {
+  .type-tile {
+    min-height: 150px;
+    padding: 18px;
+  }
+}
+
+/* ---------- Witness mode ---------- */
+
+.witness-card {
+  padding: 18px;
+  border: 1px solid rgba(91, 155, 255, 0.3);
+  border-radius: 20px;
+  background:
+    radial-gradient(120% 100% at 0% 0%, rgba(91, 155, 255, 0.16), transparent 60%),
+    linear-gradient(170deg, #151a24, #101217);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 16px 30px -18px rgba(0, 0, 0, 0.9);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.witness-card.on {
+  border-color: rgba(91, 155, 255, 0.6);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 16px 30px -18px rgba(0, 0, 0, 0.9),
+    0 18px 40px -26px var(--blue);
+}
+
+.witness-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.witness-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(91, 155, 255, 0.4);
+  border-radius: 12px;
+  background: linear-gradient(160deg, rgba(91, 155, 255, 0.3), rgba(91, 155, 255, 0.06));
+  color: #a8c8ff;
+}
+
+.witness-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.witness-title {
+  flex: 1;
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+.witness-text {
+  margin: 12px 0 14px;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.witness-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  color: var(--ink-faint);
+}
+
+.witness-loc b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.witness-loc b.set {
+  color: #a8c8ff;
+}
+
+.btn-small {
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--line-strong);
+  font-size: 14px;
+}
+
+/* An on/off switch with a raised thumb. */
+.switch {
+  position: relative;
+  flex: none;
+  width: 52px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: #0b0b0d;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #f4f4f5, #b9b9c0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.switch[aria-checked="true"] {
+  border-color: var(--blue);
+  background: var(--blue);
+}
+
+.switch[aria-checked="true"] .switch-thumb {
+  transform: translateX(22px);
+  background: #fff;
+}
+
+/* ---------- Location picker ---------- */
+
+.location-hint {
+  margin: -4px 0 12px;
+}
+
+.location-map {
+  height: min(60vh, 460px);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+#location-error {
+  margin: 10px 0 0;
+}
+
+.sheet-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+/* ---------- Witness question ---------- */
+
+.question-where {
+  flex: 1;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.question-text {
+  margin: 4px 0 14px;
+  font-size: 22px;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.question-map {
+  height: 150px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+#question-error {
+  margin: 0 0 12px;
+}
+
+.answer-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.btn-answer {
+  min-height: 56px;
+  font-size: 17px;
+}
+
+.btn-yes {
+  border-color: var(--green);
+  background: var(--green);
+  color: #03140a;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 8px 24px -12px var(--green);
+}
+
+.btn-yes:hover {
+  border-color: #5fe09a;
+  background: #5fe09a;
+}
+
+.question-timer {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.question-timer.soon {
+  color: var(--amber);
+}
+
+/* ---------- My reports ---------- */
+
+.my-reports {
+  margin-top: 40px;
+}
+
+.section-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.section-title h2 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.03em;
+}
+
+.section-title .hint {
+  font-size: 13px;
+}
+
+.report-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.report-item {
+  position: relative;
+  padding: 14px 16px 14px 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(170deg, #18181b, #111113);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 10px 20px -12px rgba(0, 0, 0, 0.8);
+  transition: transform 0.2s ease-out, border-color 0.2s, box-shadow 0.2s;
+  animation: report-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.report-item:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-strong);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07) inset, 0 18px 30px -16px rgba(0, 0, 0, 0.9);
+}
+
+/* Sent, assigned, accepted, on the way, resolved: five segments that fill up. */
+.report-track {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.report-track i {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.report-track i.done {
+  background: linear-gradient(90deg, var(--orange-deep), var(--orange));
+}
+
+/* The current step glows and has a light running over it. */
+.report-track i.current {
+  background: linear-gradient(90deg, var(--orange) 0%, #ffd0b0 50%, var(--orange) 100%);
+  background-size: 200% 100%;
+  box-shadow: 0 0 10px var(--orange-glow);
+  animation: track-run 1.6s linear infinite;
+}
+
+.report-track i.done:last-child {
+  background: var(--green);
+  box-shadow: 0 0 10px rgba(60, 207, 122, 0.5);
+}
+
+.report-track.stopped i:first-child {
+  background: var(--red);
+}
+
+@keyframes track-run {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+/* A thin bar on the left in the incident type's color. */
+.report-item::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--type-color, var(--ink-faint));
+}
+
+/* Briefly highlighted after a live status change. */
+.report-item.changed {
+  animation: report-flash 1.6s ease-out;
+}
+
+.report-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.report-type {
+  font-weight: 600;
+}
+
+.report-desc {
+  margin: 6px 0 0;
+  color: var(--ink-soft);
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.report-meta {
+  margin: 8px 0 0;
+  color: var(--ink-faint);
+  font-size: 13px;
+}
+
+.report-empty {
+  padding: 22px 16px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 16px;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+@keyframes report-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes report-flash {
+  0% {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 4px var(--orange-soft);
+  }
+  100% {
+    border-color: var(--line);
+    box-shadow: none;
+  }
+}
+
+/* ---------- Sheets (native <dialog>) ---------- */
+
+.sheet {
+  width: 100%;
+  max-width: 640px;
+  max-height: 92vh;
+  margin: auto auto 0;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.6);
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+}
+
+.sheet[open] {
+  animation: sheet-up 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-origin: 50% 100%;
+}
+
+.sheet::backdrop {
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+}
+
+/* The grab handle at the top of the sheet. */
+.sheet::before {
+  content: "";
+  display: block;
+  width: 40px;
+  height: 4px;
+  margin: 10px auto 0;
+  border-radius: 2px;
+  background: var(--line-strong);
+}
+
+@keyframes sheet-up {
+  from {
+    transform: perspective(1200px) translateY(60px) rotateX(14deg);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (min-width: 700px) {
+  .sheet {
+    margin: auto;
+    border-bottom: 1px solid var(--line-strong);
+    border-radius: 22px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+  }
+
+  .sheet::before {
+    display: none;
+  }
+}
+
+.sheet-small {
+  max-width: 440px;
+}
+
+.sheet-body {
+  padding: 14px 18px calc(18px + env(safe-area-inset-bottom));
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.sheet-icon.type-icon {
+  flex: none;
+  transform: none;
+}
+
+.sheet-title {
+  flex: 1;
+  margin: 0;
+  font-size: 20px;
+}
+
+.sheet-close {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.sheet-close:hover {
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+.danger-line {
+  display: block;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border: 1px solid rgba(240, 68, 56, 0.4);
+  border-radius: var(--radius);
+  background: var(--red-soft);
+  color: #ff8178;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.danger-line:hover {
+  background: rgba(240, 68, 56, 0.22);
+}
+
+.field-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.field label .hint {
+  font-weight: 400;
+}
+
+.report-map {
+  height: 200px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.counter {
+  align-self: flex-end;
+  font-size: 12px;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.stepper-btn {
+  width: 48px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 22px;
+  cursor: pointer;
+  border-radius: 999px;
+}
+
+.stepper-btn:hover:not(:disabled) {
+  color: var(--orange-bright);
+}
+
+.stepper-btn:disabled {
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+
+.stepper output {
+  min-width: 40px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.file-input {
+  min-height: 44px;
+  padding: 8px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 14px;
+}
+
+.file-input::file-selector-button {
+  margin-right: 10px;
+  padding: 8px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface-3);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#report-error {
+  margin: 0 0 12px;
+}
+
+.btn-send {
+  min-height: 54px;
+  font-size: 17px;
+}
+
+/* Pin on the report map: an orange drop with a dark centre. */
+.marker-pin {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  border-radius: 50% 50% 50% 0;
+  border: 2px solid #fff;
+  background: var(--orange);
+  transform: rotate(-45deg);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.6);
+}
+
+.marker-pin::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: #0b0b0c;
+}
+
+/* ---------- Sent ---------- */
+
+.sent-body {
+  text-align: center;
+  padding-top: 26px;
+}
+
+.sent-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(46, 211, 183, 0.5);
+  background: linear-gradient(160deg, rgba(46, 211, 183, 0.35), rgba(46, 211, 183, 0.08));
+  color: var(--teal-bright);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2) inset, 0 0 0 8px rgba(46, 211, 183, 0.06),
+    0 18px 30px -12px rgba(46, 211, 183, 0.6);
+  animation: coin 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s backwards;
+}
+
+@keyframes coin {
+  from {
+    opacity: 0;
+    transform: perspective(500px) rotateY(-200deg) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(500px) rotateY(0) scale(1);
+  }
+}
+
+.sent-text {
+  margin: 8px 0 22px;
+  color: var(--ink-soft);
+}
