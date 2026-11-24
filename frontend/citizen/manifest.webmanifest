@@ -1,0 +1,19 @@
+{
+  "name": "Vigora — сигнал към 112",
+  "short_name": "Vigora",
+  "description": "Бърз сигнал към операторите на 112 с място, снимка и потвърждение от свидетели.",
+  "start_url": "/citizen/",
+  "scope": "/citizen/",
+  "display": "standalone",
+  "background_color": "#070708",
+  "theme_color": "#070708",
+  "lang": "bg",
+  "icons": [
+    {
+      "src": "/citizen/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

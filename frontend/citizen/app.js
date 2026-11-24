@@ -378,6 +378,20 @@
     return "pill pill-blue";
   }
 
+  // The way a report goes from sent to resolved, drawn as a track of five steps.
+  var TRACK = ["new", "assigned", "accepted", "on_scene", "resolved"];
+
+  function trackHtml(status) {
+    var stopped = status === "false_report";
+    var reached = stopped ? 0 : TRACK.indexOf(status);
+    var steps = TRACK.map(function (key, i) {
+      var state = i < reached ? "done" : i === reached ? "current" : "";
+      if (status === "resolved" && i === reached) state = "done";
+      return '<i class="' + state + '"></i>';
+    }).join("");
+    return '<div class="report-track' + (stopped ? " stopped" : "") + '" aria-hidden="true">' + steps + "</div>";
+  }
+
   function reportHtml(report, highlightId) {
     var type = Vigora.meta && Vigora.meta.byKey[report.type];
     var meta = Vigora.timeAgo(report.created_at);
@@ -390,6 +404,7 @@
       '<span class="' + statusPillClass(report.status) + '">' + Vigora.escapeHtml(report.status_label) + "</span>" +
       "</div>" +
       (report.description ? '<p class="report-desc">' + Vigora.escapeHtml(report.description) + "</p>" : "") +
+      trackHtml(report.status) +
       '<p class="report-meta">' + Vigora.escapeHtml(meta) + "</p>" +
       "</article>"
     );

@@ -4,7 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#070708">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Vigora">
   <title>Vigora — Граждани</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
   <link rel="stylesheet" href="/shared/vigora.css">
@@ -15,6 +20,10 @@
   <!-- Login and registration -->
   <main id="login-screen" class="login-page hidden">
     <div class="login-card">
+      <div class="radar radar-login" aria-hidden="true">
+        <div class="radar-plane"><i></i><i></i><i></i><span class="radar-sweep"></span></div>
+        <span class="radar-core"></span>
+      </div>
       <div class="wordmark">Vig<em>o</em>ra</div>
       <p class="app-name">Граждани</p>
 
@@ -75,6 +84,10 @@
 
       <section class="status-stage" aria-label="Състояние">
         <div class="status-card tilt" id="status-card" data-state="pending">
+          <div class="radar radar-status" aria-hidden="true">
+            <div class="radar-plane"><i></i><i></i><i></i><span class="radar-sweep"></span></div>
+            <span class="radar-core"></span>
+          </div>
           <div class="status-row">
             <span class="status-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
@@ -92,10 +105,12 @@
         </div>
       </section>
 
+      <p class="step-label"><span>01</span>Подайте сигнал</p>
       <p class="hint">Изберете вида на сигнала. Ще го видят операторите на 112 веднага.</p>
 
       <div id="type-grid" class="type-grid" aria-label="Вид на сигнала"></div>
 
+      <p class="step-label step-label-gap"><span>02</span>Помогнете наблизо</p>
       <section class="witness-card" aria-labelledby="witness-title">
         <div class="witness-head">
           <span class="witness-icon" aria-hidden="true">
@@ -118,6 +133,7 @@
       </section>
 
       <section class="my-reports" aria-labelledby="my-reports-title">
+        <p class="step-label"><span>03</span>Следете статуса</p>
         <div class="section-title">
           <h2 id="my-reports-title">Моите сигнали</h2>
           <span class="hint" id="my-reports-count"></span>

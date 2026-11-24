@@ -18,15 +18,35 @@
   min-height: 46px;
   padding: 8px 16px;
   padding-top: max(8px, env(safe-area-inset-top));
-  background: var(--red);
+  overflow: hidden;
+  background: linear-gradient(90deg, #d92d20, #f04438 50%, #d92d20);
   color: #fff;
   font-weight: 600;
   font-size: 15px;
   text-decoration: none;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25), 0 8px 24px -12px rgba(240, 68, 56, 0.8);
+}
+
+/* A slow light that passes over the bar. */
+.call-bar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -40%;
+  width: 40%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+  animation: shine 5s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .call-bar:hover {
   background: #e2392d;
+}
+
+@keyframes shine {
+  0%, 60% { transform: translateX(0); }
+  100% { transform: translateX(350%); }
 }
 
 .call-pill {
@@ -43,6 +63,52 @@
 
 .app-header-wrap {
   border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(18, 18, 20, 0.85), rgba(10, 10, 12, 0.55));
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+/* ---------- Step labels: 01, 02, 03 ---------- */
+
+.step-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.step-label span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid rgba(255, 107, 26, 0.35);
+  border-radius: 999px;
+  background: var(--orange-soft);
+  color: var(--orange-bright);
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+/* A thin line from the label to the right edge. */
+.step-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--line-strong), transparent);
+}
+
+.step-label-gap {
+  margin-top: 40px;
+  margin-bottom: 12px;
 }
 
 .app-header,
@@ -81,11 +147,119 @@
 
 /* ---------- Page lights ---------- */
 
-/* Two soft lights, orange and teal, so the black has some depth. */
-body[data-app="citizen"] {
-  background-image:
-    radial-gradient(ellipse 70% 45% at 100% 0%, rgba(255, 107, 26, 0.12), transparent 70%),
-    radial-gradient(ellipse 60% 40% at 0% 35%, rgba(46, 211, 183, 0.07), transparent 70%);
+/* Three soft lights (orange, teal and a little violet) that drift slowly behind everything,
+   and a fine dot grid that fades out toward the bottom. */
+body[data-app="citizen"]::before,
+body[data-app="citizen"]::after {
+  content: "";
+  position: fixed;
+  pointer-events: none;
+  z-index: -1;
+}
+
+body[data-app="citizen"]::before {
+  inset: -20%;
+  background:
+    radial-gradient(28% 24% at 82% 12%, rgba(255, 107, 26, 0.2), transparent 70%),
+    radial-gradient(26% 22% at 10% 42%, rgba(46, 211, 183, 0.11), transparent 70%),
+    radial-gradient(30% 26% at 70% 78%, rgba(139, 92, 246, 0.1), transparent 70%);
+  filter: blur(20px);
+  animation: aurora 22s ease-in-out infinite alternate;
+}
+
+body[data-app="citizen"]::after {
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+  -webkit-mask-image: linear-gradient(180deg, #000, transparent 55%);
+  mask-image: linear-gradient(180deg, #000, transparent 55%);
+}
+
+@keyframes aurora {
+  from { transform: translate3d(0, 0, 0) rotate(0deg); }
+  to { transform: translate3d(-4%, 3%, 0) rotate(8deg); }
+}
+
+/* ---------- Radar: rings spreading from a red dot, on a tilted plane ---------- */
+
+.radar {
+  --radar: var(--orange);
+  position: relative;
+  width: 160px;
+  height: 92px;
+  margin: -6px auto 8px;
+  perspective: 420px;
+  pointer-events: none;
+}
+
+.radar-plane {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 160px;
+  height: 160px;
+  margin: -80px 0 0 -80px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--radar) 22%, transparent), transparent 62%),
+    repeating-radial-gradient(circle, transparent 0 19px, rgba(255, 255, 255, 0.05) 19px 20px);
+  transform: rotateX(64deg);
+}
+
+.radar-plane i {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--radar);
+  border-radius: 50%;
+  opacity: 0;
+  animation: ripple 3.6s cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
+}
+
+.radar-plane i:nth-child(2) { animation-delay: 1.2s; }
+.radar-plane i:nth-child(3) { animation-delay: 2.4s; }
+
+.radar-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, color-mix(in srgb, var(--radar) 45%, transparent), transparent 22%);
+  animation: sweep 4.5s linear infinite;
+}
+
+/* The red dot floats above the plane and casts a shadow on it. */
+.radar-core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  margin: -20px 0 0 -9px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ff9a90, #f04438 55%, #9e1a12);
+  box-shadow:
+    0 0 0 5px rgba(240, 68, 56, 0.16),
+    0 0 26px 6px rgba(240, 68, 56, 0.5),
+    0 14px 10px -6px rgba(0, 0, 0, 0.9);
+  animation: bob 3.6s ease-in-out infinite;
+}
+
+@keyframes ripple {
+  0% { transform: scale(0.12); opacity: 0; }
+  12% { opacity: 0.9; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+@keyframes sweep {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes bob {
+  50% { transform: translateY(-5px); }
+}
+
+.radar-login {
+  transform: translateZ(40px);
 }
 
 /* ---------- Login: a card that tilts toward the pointer ---------- */
@@ -169,7 +343,32 @@ body[data-app="citizen"] {
   display: flex;
   align-items: center;
   gap: 14px;
+  padding-right: 64px;
   transform: translateZ(28px);
+}
+
+/* A small radar in the top right corner: amber while looking, teal once the place is known. */
+.radar-status {
+  --radar: var(--amber);
+  position: absolute;
+  top: 4px;
+  right: 0;
+  width: 110px;
+  height: 76px;
+  margin: 0;
+  transform: translateZ(18px) scale(0.72);
+  transform-origin: 100% 0;
+}
+
+.status-card[data-state="found"] .radar-status {
+  --radar: var(--teal);
+}
+
+/* Without a location there is nothing to sweep. */
+.status-card[data-state="off"] .radar-plane i,
+.status-card[data-state="off"] .radar-sweep {
+  animation: none;
+  opacity: 0;
 }
 
 .status-icon {
@@ -480,7 +679,6 @@ body[data-app="citizen"] {
 /* ---------- Witness mode ---------- */
 
 .witness-card {
-  margin-top: 28px;
   padding: 18px;
   border: 1px solid rgba(91, 155, 255, 0.3);
   border-radius: 20px;
@@ -724,7 +922,54 @@ body[data-app="citizen"] {
   border-radius: 16px;
   background: linear-gradient(170deg, #18181b, #111113);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 10px 20px -12px rgba(0, 0, 0, 0.8);
+  transition: transform 0.2s ease-out, border-color 0.2s, box-shadow 0.2s;
   animation: report-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.report-item:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-strong);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07) inset, 0 18px 30px -16px rgba(0, 0, 0, 0.9);
+}
+
+/* Sent, assigned, accepted, on the way, resolved: five segments that fill up. */
+.report-track {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.report-track i {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.report-track i.done {
+  background: linear-gradient(90deg, var(--orange-deep), var(--orange));
+}
+
+/* The current step glows and has a light running over it. */
+.report-track i.current {
+  background: linear-gradient(90deg, var(--orange) 0%, #ffd0b0 50%, var(--orange) 100%);
+  background-size: 200% 100%;
+  box-shadow: 0 0 10px var(--orange-glow);
+  animation: track-run 1.6s linear infinite;
+}
+
+.report-track i.done:last-child {
+  background: var(--green);
+  box-shadow: 0 0 10px rgba(60, 207, 122, 0.5);
+}
+
+.report-track.stopped i:first-child {
+  background: var(--red);
+}
+
+@keyframes track-run {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
 }
 
 /* A thin bar on the left in the incident type's color. */
