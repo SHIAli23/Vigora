@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Vigora",
+    "slug": "vigora-citizen",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#070708",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Vigora използва местоположението, за да отбележи мястото на сигнала и да ви пита като свидетел за случаи наблизо.",
+        "NSCameraUsageDescription": "Vigora използва камерата, за да приложите снимка към сигнал.",
+        "NSPhotoLibraryUsageDescription": "Vigora отваря галерията, за да приложите снимка към сигнал."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#141417",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "CAMERA"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Vigora използва местоположението, за да отбележи мястото на сигнала и да ви пита като свидетел за случаи наблизо."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Vigora използва камерата, за да приложите снимка към сигнал.",
+          "photosPermission": "Vigora отваря галерията, за да приложите снимка към сигнал."
+        }
+      ]
+    ]
+  }
+}
