@@ -104,6 +104,7 @@
     socket = null;
     if (reportSheet.open) reportSheet.close();
     if (sentSheet.open) sentSheet.close();
+    resetWitness();
     listRequest++; // drop a list that is still loading
     reportList.innerHTML = "";
     reportCount.textContent = "";
@@ -212,13 +213,15 @@
     document.getElementById("loc-chip").textContent = chip;
   }
 
-  // Ask for the GPS location once. Without it the map starts in Sofia.
-  function locate() {
+  // Ask for the GPS location. Without it the map starts in Sofia.
+  // done(ok) is optional and is called once the browser answers.
+  function locate(done) {
     if (!navigator.geolocation) {
       setLocationStatus("off", "Посочете мястото на картата", "Няма GPS");
+      if (done) done(false);
       return;
     }
-    setLocationStatus("pending", "Търсим…", "GPS");
+    if (!myLocation) setLocationStatus("pending", "Търсим…", "GPS");
     navigator.geolocation.getCurrentPosition(
       function (position) {
         myLocation = [position.coords.latitude, position.coords.longitude];
@@ -228,10 +231,13 @@
           "Определено" + (accuracy ? " · ±" + Vigora.formatDistance(accuracy) : ""),
           "GPS включен"
         );
+        locationChanged();
+        if (done) done(true);
       },
       function () {
         // Denied or unavailable: the citizen places the pin by hand.
-        setLocationStatus("off", "Посочете мястото на картата", "GPS изключен");
+        if (!myLocation) setLocationStatus("off", "Посочете мястото на картата", "GPS изключен");
+        if (done) done(false);
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
     );
@@ -299,9 +305,10 @@
 
     reportSheet.showModal();
     ensureMap();
-    var start = myLocation || SOFIA;
+    var known = currentLocation();
+    var start = known || SOFIA;
     reportPin.setLatLng(start);
-    reportMap.setView(start, myLocation ? 17 : 14, { animate: false });
+    reportMap.setView(start, known ? 17 : 14, { animate: false });
     // The map was measured while hidden; let Leaflet read its real size now.
     requestAnimationFrame(function () {
       reportMap.invalidateSize();
@@ -410,11 +417,336 @@
     }
   }
 
+  // ---------- Witness mode: location ----------
+
+  var WITNESS_KEY = "vigora.citizen.witness";
+  var SHARE_EVERY_MS = 60000;
+
+  var witnessCard = document.querySelector(".witness-card");
+  var witnessSwitch = document.getElementById("witness-switch");
+  var witnessLoc = document.getElementById("witness-loc");
+  var locationSheet = document.getElementById("location-sheet");
+  var locationError = document.getElementById("location-error");
+
+  var witnessOn = false;
+  var manualLocation = null; // [lat, lng] chosen on the map; kept in memory only
+  var locationMap = null;
+  var locationMarker = null;
+
+  // A point picked by hand wins over the GPS, because the citizen chose it on purpose.
+  function currentLocation() {
+    return manualLocation || myLocation;
+  }
+
+  function renderWitnessLocation() {
+    var text = manualLocation ? "зададено ръчно" : myLocation ? "по GPS" : "още не е определено";
+    witnessLoc.textContent = text;
+    witnessLoc.classList.toggle("set", Boolean(currentLocation()));
+  }
+
+  // Send the location to the server while witness mode is on. Called right away, after every
+  // (re)connect and every minute, so the server never holds a stale point.
+  function shareLocation() {
+    var point = currentLocation();
+    if (!witnessOn || !socket || !point) return;
+    socket.send({ type: "location", lat: point[0], lng: point[1] });
+  }
+
+  function locationChanged() {
+    renderWitnessLocation();
+    shareLocation();
+  }
+
+  function setWitness(on, remember) {
+    witnessOn = on;
+    witnessSwitch.setAttribute("aria-checked", on ? "true" : "false");
+    witnessCard.classList.toggle("on", on);
+    if (remember) {
+      try {
+        sessionStorage.setItem(WITNESS_KEY, on ? "on" : "off");
+      } catch (e) {
+        /* storage blocked: the switch still works until the tab closes */
+      }
+    }
+    if (on) {
+      shareLocation();
+      // Only when the citizen just switched it on, not when the choice is restored on load.
+      if (remember && !currentLocation()) Vigora.toast("Изберете местоположението си на картата.");
+    } else if (socket) {
+      socket.send({ type: "location_off" });
+    }
+  }
+
+  function storedWitnessChoice() {
+    try {
+      return sessionStorage.getItem(WITNESS_KEY) === "on";
+    } catch (e) {
+      return false;
+    }
+  }
+
+  witnessSwitch.addEventListener("click", function () {
+    setWitness(!witnessOn, true);
+  });
+
+  setInterval(shareLocation, SHARE_EVERY_MS);
+
+  function placeLocationMarker(point) {
+    if (locationMarker) locationMarker.setLatLng(point);
+    else locationMarker = L.marker(point, { icon: Vigora.meIcon(), keyboard: false }).addTo(locationMap);
+  }
+
+  function showLocationError(text) {
+    locationError.textContent = text || "";
+    locationError.classList.toggle("hidden", !text);
+  }
+
+  document.getElementById("pick-location").addEventListener("click", function () {
+    showLocationError("");
+    locationSheet.showModal();
+    if (!locationMap) {
+      locationMap = Vigora.makeMap(document.getElementById("location-map"), { zoom: 14 });
+      // A tap sets the location; this is the way to do it on a computer without GPS.
+      locationMap.on("click", function (e) {
+        manualLocation = [e.latlng.lat, e.latlng.lng];
+        placeLocationMarker(manualLocation);
+        showLocationError("");
+        locationChanged();
+      });
+    }
+    var point = currentLocation();
+    if (point) placeLocationMarker(point);
+    locationMap.setView(point || SOFIA, point ? 16 : 13, { animate: false });
+    requestAnimationFrame(function () {
+      locationMap.invalidateSize();
+    });
+  });
+
+  document.getElementById("use-gps").addEventListener("click", function () {
+    var button = this;
+    button.disabled = true;
+    showLocationError("");
+    locate(function (ok) {
+      button.disabled = false;
+      if (!ok) {
+        showLocationError("Няма достъп до GPS. Докоснете картата, за да зададете мястото ръчно.");
+        return;
+      }
+      manualLocation = null;
+      locationChanged();
+      placeLocationMarker(myLocation);
+      locationMap.setView(myLocation, 16);
+    });
+  });
+
+  locationSheet.addEventListener("click", function (event) {
+    if (event.target.closest("[data-close]") || event.target === locationSheet) locationSheet.close();
+  });
+
+  // ---------- Witness mode: questions ----------
+
+  var questionSheet = document.getElementById("question-sheet");
+  var questionError = document.getElementById("question-error");
+  var questionTimer = document.getElementById("question-timer");
+  var questionPhoto = document.getElementById("question-photo");
+  var answerButtons = questionSheet.querySelectorAll("[data-answer]");
+
+  var queue = []; // questions waiting to be shown, oldest first
+  var seenIds = {}; // every request_id ever queued, so a question never shows twice
+  var currentQuestion = null;
+  var answering = false;
+  var timerId = null;
+  var questionMap = null;
+  var questionLayers = null;
+
+  function deadlineOf(question) {
+    var asked = question.asked_at;
+    // The server sends UTC; add the zone if it is missing.
+    if (!/[zZ]|[+-]\d\d:?\d\d$/.test(asked)) asked += "Z";
+    return new Date(asked).getTime() + (question.expires_in_min || 10) * 60000;
+  }
+
+  function enqueue(question, isNew) {
+    if (!question || seenIds[question.request_id]) return;
+    seenIds[question.request_id] = true;
+    question.deadline = deadlineOf(question);
+    if (question.deadline <= Date.now()) return;
+    queue.push(question);
+    if (isNew && navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    if (!currentQuestion) showNextQuestion();
+  }
+
+  async function loadPendingQuestions() {
+    try {
+      var pending = await Vigora.request("/api/witness/pending");
+      // The server sends the newest first; the oldest expires first, so it goes first.
+      pending.reverse().forEach(function (q) {
+        enqueue(q, false);
+      });
+    } catch (e) {
+      /* the next connect tries again */
+    }
+  }
+
+  function formatLeft(ms) {
+    var seconds = Math.max(0, Math.ceil(ms / 1000));
+    var minutes = Math.floor(seconds / 60);
+    return minutes + ":" + String(seconds % 60).padStart(2, "0");
+  }
+
+  function tick() {
+    if (!currentQuestion) return;
+    var left = currentQuestion.deadline - Date.now();
+    if (left <= 0) {
+      finishQuestion(); // time is up: hide it and go on
+      return;
+    }
+    questionTimer.textContent = "Можете да отговорите още " + formatLeft(left) + " мин.";
+    questionTimer.classList.toggle("soon", left < 60000);
+  }
+
+  function setAnswering(value) {
+    answering = value;
+    answerButtons.forEach(function (button) {
+      button.disabled = value;
+    });
+  }
+
+  function showQuestionError(text) {
+    questionError.textContent = text || "";
+    questionError.classList.toggle("hidden", !text);
+  }
+
+  function drawQuestionMap(question) {
+    if (!questionMap) {
+      questionMap = Vigora.makeMap(document.getElementById("question-map"), { zoom: 16 });
+      questionLayers = L.layerGroup().addTo(questionMap);
+    }
+    questionLayers.clearLayers();
+    var incident = [question.lat, question.lng];
+    L.marker(incident, { icon: Vigora.incidentIcon(question.type), keyboard: false }).addTo(questionLayers);
+    var me = currentLocation();
+    if (me) {
+      L.marker(me, { icon: Vigora.meIcon(), keyboard: false }).addTo(questionLayers);
+      questionMap.fitBounds([incident, me], { padding: [30, 30], maxZoom: 17, animate: false });
+    } else {
+      questionMap.setView(incident, 16, { animate: false });
+    }
+    requestAnimationFrame(function () {
+      questionMap.invalidateSize();
+    });
+  }
+
+  function showNextQuestion() {
+    clearInterval(timerId);
+    currentQuestion = null;
+    while (queue.length && queue[0].deadline <= Date.now()) queue.shift();
+    if (!queue.length) {
+      if (questionSheet.open) questionSheet.close();
+      return;
+    }
+    var question = queue.shift();
+    currentQuestion = question;
+
+    var type = Vigora.meta && Vigora.meta.byKey[question.type];
+    var icon = document.getElementById("question-icon");
+    icon.innerHTML = type ? typeIconHtml(type) : "";
+    icon.style.setProperty("--type-color", type ? type.color : "#6b7280");
+    document.getElementById("question-where").textContent =
+      question.type_label + ", на " + Vigora.formatDistance(question.distance_m) + " от вас";
+    document.getElementById("question-text").textContent = question.question;
+    questionPhoto.value = "";
+    showQuestionError("");
+    setAnswering(false);
+
+    if (!questionSheet.open) questionSheet.showModal();
+    drawQuestionMap(question);
+    tick();
+    timerId = setInterval(tick, 1000);
+  }
+
+  // Leave the current question (answered, expired or closed) and show the next one.
+  function finishQuestion() {
+    currentQuestion = null;
+    showNextQuestion();
+  }
+
+  async function answer(value) {
+    if (!currentQuestion || answering) return;
+    var question = currentQuestion;
+    var data = new FormData();
+    data.append("answer", value);
+    if (value === "yes" && questionPhoto.files && questionPhoto.files[0]) {
+      data.append("photo", questionPhoto.files[0]);
+    }
+    showQuestionError("");
+    setAnswering(true);
+    try {
+      await Vigora.request("/api/witness/" + question.request_id, { method: "POST", form: data });
+      Vigora.toast(
+        value === "yes" ? "Благодарим! Потвърждението ви помага на 112." : "Благодарим за отговора."
+      );
+      finishQuestion();
+    } catch (e) {
+      setAnswering(false);
+      if (e.status) {
+        // The server refused it (for example the time ran out): say why and go on.
+        Vigora.toast(e.message, { error: true });
+        finishQuestion();
+      } else {
+        // No connection: keep the question so the citizen can try again.
+        showQuestionError(e.message);
+      }
+    }
+  }
+
+  answerButtons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      answer(button.dataset.answer);
+    });
+  });
+
+  questionSheet.addEventListener("click", function (event) {
+    if (event.target.closest("[data-close]") || event.target === questionSheet) questionSheet.close();
+  });
+
+  // Closed with the button or Escape without answering: skip to the next question.
+  questionSheet.addEventListener("close", function () {
+    if (currentQuestion) finishQuestion();
+  });
+
+  function resetWitness() {
+    clearInterval(timerId);
+    queue = [];
+    seenIds = {};
+    currentQuestion = null;
+    manualLocation = null;
+    if (questionSheet.open) questionSheet.close();
+    if (locationSheet.open) locationSheet.close();
+    try {
+      sessionStorage.removeItem(WITNESS_KEY); // the next person in this tab decides for themselves
+    } catch (e) {
+      /* ignore */
+    }
+    setWitness(false, false);
+    renderWitnessLocation();
+  }
+
+  // ---------- Live events ----------
+
   function onEvent(event, data) {
     if (event === "report.status") {
       Vigora.toast("Вашият сигнал: " + data.status_label);
       loadMyReports(data.incident_id);
+    } else if (event === "witness.question") {
+      enqueue(data, true);
     }
+  }
+
+  // After every (re)connect: send the location again and pick up questions missed while offline.
+  function onOpen() {
+    shareLocation();
+    loadPendingQuestions();
   }
 
   function startApp() {
@@ -425,7 +757,9 @@
     setConnection(false);
     connLabel.textContent = "Свързване…";
     loadMyReports();
-    socket = Vigora.connect({ onStatus: setConnection, onEvent: onEvent });
+    setWitness(storedWitnessChoice(), false);
+    renderWitnessLocation();
+    socket = Vigora.connect({ onStatus: setConnection, onEvent: onEvent, onOpen: onOpen });
     locate();
   }
 

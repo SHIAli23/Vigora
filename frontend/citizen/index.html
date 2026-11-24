@@ -96,6 +96,27 @@
 
       <div id="type-grid" class="type-grid" aria-label="Вид на сигнала"></div>
 
+      <section class="witness-card" aria-labelledby="witness-title">
+        <div class="witness-head">
+          <span class="witness-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          </span>
+          <h2 id="witness-title" class="witness-title">Помагам като свидетел</h2>
+          <button type="button" class="switch" id="witness-switch" role="switch" aria-checked="false"
+                  aria-labelledby="witness-title">
+            <span class="switch-thumb"></span>
+          </button>
+        </div>
+        <p class="witness-text">
+          Когато наблизо има нов сигнал, ще ви попитаме дали виждате нещо. Пазим само приблизителна
+          зона и я забравяме, когато затворите приложението.
+        </p>
+        <div class="witness-foot">
+          <span class="witness-loc">Местоположение: <b id="witness-loc">още не е определено</b></span>
+          <button type="button" class="btn btn-quiet btn-small" id="pick-location">Избери на картата</button>
+        </div>
+      </section>
+
       <section class="my-reports" aria-labelledby="my-reports-title">
         <div class="section-title">
           <h2 id="my-reports-title">Моите сигнали</h2>
@@ -153,6 +174,56 @@
 
       <button type="submit" class="btn btn-danger btn-block btn-send" id="report-submit">Изпрати сигнала</button>
     </form>
+  </dialog>
+
+  <!-- Location picker -->
+  <dialog id="location-sheet" class="sheet" aria-labelledby="location-title">
+    <div class="sheet-body">
+      <div class="sheet-head">
+        <h2 id="location-title" class="sheet-title">Къде се намирате?</h2>
+        <button type="button" class="sheet-close" data-close aria-label="Затвори">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <p class="hint location-hint">Докоснете картата там, където сте в момента.</p>
+      <div id="location-map" class="location-map" aria-label="Карта за избор на местоположение"></div>
+      <p id="location-error" class="error-text hidden" role="alert"></p>
+      <div class="sheet-actions">
+        <button type="button" class="btn" id="use-gps">Използвай GPS</button>
+        <button type="button" class="btn btn-primary" data-close>Готово</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Witness question -->
+  <dialog id="question-sheet" class="sheet" aria-labelledby="question-text">
+    <div class="sheet-body">
+      <div class="sheet-head">
+        <span id="question-icon" class="type-icon sheet-icon" aria-hidden="true"></span>
+        <p class="question-where" id="question-where"></p>
+        <button type="button" class="sheet-close" data-close aria-label="Затвори">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+
+      <h2 id="question-text" class="question-text"></h2>
+      <div id="question-map" class="question-map" aria-hidden="true"></div>
+
+      <div class="field">
+        <label for="question-photo">Снимка <span class="hint">— по желание, само при „Да“ и само от безопасно място</span></label>
+        <input id="question-photo" type="file" accept="image/jpeg,image/png,image/webp"
+               capture="environment" class="file-input">
+      </div>
+
+      <p id="question-error" class="error-text hidden" role="alert"></p>
+
+      <div class="answer-row">
+        <button type="button" class="btn btn-answer btn-yes" data-answer="yes">Да, виждам</button>
+        <button type="button" class="btn btn-answer" data-answer="no">Не</button>
+      </div>
+      <button type="button" class="btn btn-quiet btn-block" data-answer="unsure">Не виждам оттук</button>
+      <p class="hint question-timer" id="question-timer" aria-live="off"></p>
+    </div>
   </dialog>
 
   <!-- Sent confirmation -->

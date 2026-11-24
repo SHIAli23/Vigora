@@ -477,6 +477,216 @@ body[data-app="citizen"] {
   }
 }
 
+/* ---------- Witness mode ---------- */
+
+.witness-card {
+  margin-top: 28px;
+  padding: 18px;
+  border: 1px solid rgba(91, 155, 255, 0.3);
+  border-radius: 20px;
+  background:
+    radial-gradient(120% 100% at 0% 0%, rgba(91, 155, 255, 0.16), transparent 60%),
+    linear-gradient(170deg, #151a24, #101217);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 16px 30px -18px rgba(0, 0, 0, 0.9);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.witness-card.on {
+  border-color: rgba(91, 155, 255, 0.6);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 16px 30px -18px rgba(0, 0, 0, 0.9),
+    0 18px 40px -26px var(--blue);
+}
+
+.witness-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.witness-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(91, 155, 255, 0.4);
+  border-radius: 12px;
+  background: linear-gradient(160deg, rgba(91, 155, 255, 0.3), rgba(91, 155, 255, 0.06));
+  color: #a8c8ff;
+}
+
+.witness-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.witness-title {
+  flex: 1;
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+.witness-text {
+  margin: 12px 0 14px;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.witness-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  color: var(--ink-faint);
+}
+
+.witness-loc b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.witness-loc b.set {
+  color: #a8c8ff;
+}
+
+.btn-small {
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--line-strong);
+  font-size: 14px;
+}
+
+/* An on/off switch with a raised thumb. */
+.switch {
+  position: relative;
+  flex: none;
+  width: 52px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: #0b0b0d;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #f4f4f5, #b9b9c0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.switch[aria-checked="true"] {
+  border-color: var(--blue);
+  background: var(--blue);
+}
+
+.switch[aria-checked="true"] .switch-thumb {
+  transform: translateX(22px);
+  background: #fff;
+}
+
+/* ---------- Location picker ---------- */
+
+.location-hint {
+  margin: -4px 0 12px;
+}
+
+.location-map {
+  height: min(60vh, 460px);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+#location-error {
+  margin: 10px 0 0;
+}
+
+.sheet-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+/* ---------- Witness question ---------- */
+
+.question-where {
+  flex: 1;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.question-text {
+  margin: 4px 0 14px;
+  font-size: 22px;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.question-map {
+  height: 150px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+#question-error {
+  margin: 0 0 12px;
+}
+
+.answer-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.btn-answer {
+  min-height: 56px;
+  font-size: 17px;
+}
+
+.btn-yes {
+  border-color: var(--green);
+  background: var(--green);
+  color: #03140a;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 8px 24px -12px var(--green);
+}
+
+.btn-yes:hover {
+  border-color: #5fe09a;
+  background: #5fe09a;
+}
+
+.question-timer {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.question-timer.soon {
+  color: var(--amber);
+}
+
 /* ---------- My reports ---------- */
 
 .my-reports {
