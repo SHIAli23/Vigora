@@ -189,6 +189,125 @@ body[data-app="operator"] {
   font-size: 14px;
 }
 
+/* ---------- Tickets ---------- */
+
+/* The urgency level gives the only strong color of a ticket. */
+.ticket {
+  --level: var(--ink-faint);
+  --level-soft: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 10px 12px 10px 10px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--level);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.ticket:hover {
+  background: var(--surface-3);
+}
+
+.ticket.level-critical { --level: var(--red); --level-soft: var(--red-soft); }
+.ticket.level-high { --level: var(--amber); --level-soft: var(--amber-soft); }
+.ticket.level-medium { --level: var(--blue); --level-soft: var(--blue-soft); }
+.ticket.level-low { --level: var(--ink-faint); --level-soft: rgba(255, 255, 255, 0.05); }
+
+.ticket.selected {
+  border-color: var(--orange);
+  border-left-color: var(--level);
+  background: #221a14;
+  box-shadow: 0 0 0 1px var(--orange);
+}
+
+/* Briefly highlighted after a live change. */
+.ticket.changed {
+  animation: ticket-flash 1.6s ease-out;
+}
+
+@keyframes ticket-flash {
+  from { background-color: rgba(255, 107, 26, 0.22); }
+}
+
+.ticket-score {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  padding: 6px 4px;
+  border-radius: 9px;
+  background: var(--level-soft);
+  color: var(--level);
+}
+
+.ticket-score b {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.ticket-score small {
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ticket-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ticket-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ticket-type {
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ticket-time {
+  flex: none;
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.ticket-people {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.ticket-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.ticket-pills .pill {
+  padding: 1px 8px;
+  font-size: 12px;
+}
+
 /* ---------- Map ---------- */
 
 .map-column {
