@@ -36,10 +36,13 @@ the login card and type the address, for example `http://192.168.1.20:8000`. You
 `citizen1` … `citizen5`, password `citizen123`. Log in as different people on different phones
 (or one on the phone and one in the web app) to see witness questions and live status changes.
 
+`operator`, password `operator123`, opens the operator 112 panel: live stats, the map with the
+teams and the incident queue, the same as the web panel at `/operator/`.
+
 ## Files
 
 - `App.js`: fonts, saved login, login or home screen
 - `src/api.js`: requests, login, the server address and the live WebSocket
-- `src/LoginScreen.js`, `src/HomeScreen.js`: the two screens
+- `src/LoginScreen.js`, `src/HomeScreen.js`, `src/OperatorScreen.js`: login, citizen home and operator panel
 - `src/sheets.js`: report, location, witness question and "sent" sheets
 - `src/ui.js`, `src/theme.js`: shared parts, colors and fonts

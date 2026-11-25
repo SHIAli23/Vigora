@@ -135,6 +135,19 @@ export default function LoginScreen({ onLogin }) {
                   </Pressable>
                 ))}
               </View>
+              <Text style={[text.hint, { marginTop: 16 }]}>Оператор</Text>
+              <View style={styles.demoList}>
+                <Pressable
+                  style={({ pressed }) => [styles.chip, pressed && { backgroundColor: colors.orangeSoft, borderColor: colors.orange }]}
+                  onPress={() => {
+                    setUsername("operator");
+                    setPassword("operator123");
+                    submit("operator", "operator123");
+                  }}
+                >
+                  <Text style={styles.chipText}>Оператор 112</Text>
+                </Pressable>
+              </View>
             </View>
           )}
         </View>
