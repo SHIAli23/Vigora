@@ -212,7 +212,291 @@
     var ticket = queueList.querySelector('.ticket[data-id="' + id + '"]');
     if (ticket) ticket.scrollIntoView({ block: "nearest" });
     if (map) map.panTo([incident.lat, incident.lng], { animate: true });
+    openDetail(id);
   }
+
+  // ---------- Detail ----------
+
+  var detailBody = document.getElementById("detail-body");
+  var detailEmpty = document.getElementById("detail-empty");
+  var detailId = null; // stays after the incident closes, so the final state can be read
+  var detail = null; // the last loaded detail
+  var detailRequest = 0;
+  var busy = false; // an action is running
+  var photoUrls = new Map(); // photo name -> blob URL (the endpoint needs the login)
+
+  function openDetail(id) {
+    if (detailId !== id) {
+      detail = null;
+      detailBody.innerHTML = '<p class="hint detail-loading">Зареждане…</p>';
+    }
+    detailId = id;
+    detailEmpty.classList.add("hidden");
+    detailBody.classList.remove("hidden");
+    detailBody.scrollTop = 0;
+    loadDetail();
+  }
+
+  function closeDetail() {
+    detailRequest++;
+    detailId = null;
+    detail = null;
+    detailBody.innerHTML = "";
+    detailBody.classList.add("hidden");
+    detailEmpty.classList.remove("hidden");
+  }
+
+  async function loadDetail() {
+    if (detailId === null) return;
+    var request = ++detailRequest;
+    var id = detailId;
+    try {
+      var data = await Vigora.request("/api/incidents/" + id);
+      if (request !== detailRequest) return;
+      detail = data;
+      renderDetail();
+    } catch (e) {
+      if (request !== detailRequest) return;
+      if (e.status === 404) {
+        closeDetail(); // deleted, e.g. by a demo reset
+      } else {
+        detailBody.innerHTML = '<p class="error-text detail-loading">' + Vigora.escapeHtml(e.message) + "</p>";
+      }
+    }
+  }
+
+  function signed(points) {
+    if (points < 0) return '<span class="minus">−' + Math.abs(points) + "</span>";
+    return "+" + points;
+  }
+
+  function headerHtml(d) {
+    var level = LEVEL_WORDS[d.level] || d.level;
+    var status = Vigora.escapeHtml(d.status_label) +
+      (d.assigned_team ? ": " + Vigora.escapeHtml(d.assigned_team.name) : "");
+    return (
+      '<header class="detail-head level-' + Vigora.escapeHtml(d.level) + '">' +
+      '<span class="ticket-score detail-score"><b>' + Math.round(d.urgency) + "</b><small>" + Vigora.escapeHtml(level) + "</small></span>" +
+      '<div class="detail-title"><h2>' + Vigora.escapeHtml(d.type_label) + "</h2>" +
+      "<p>" + status + ". Получен в " + Vigora.clock(d.created_at) + ".</p></div>" +
+      '<button type="button" class="detail-close" data-action="close" aria-label="Затвори детайлите">' +
+      '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
+      "</button></header>"
+    );
+  }
+
+  function breakdownHtml(d) {
+    var rows = (d.urgency_breakdown || []).map(function (item) {
+      return "<tr><td>" + Vigora.escapeHtml(item.label) + '</td><td class="num">' + signed(item.points) + "</td></tr>";
+    });
+    rows.push('<tr class="total"><td>Общо</td><td class="num">' + Math.round(d.urgency) + "</td></tr>");
+    return (
+      '<section class="detail-section"><h3>Защо е с тази спешност</h3>' +
+      '<table class="breakdown"><tbody>' + rows.join("") + "</tbody></table></section>"
+    );
+  }
+
+  function witnessesHtml(d) {
+    var asked = d.witnesses_asked;
+    var body;
+    if (!asked) {
+      body = '<p class="hint">Нямаше хора наблизо, споделили местоположение.</p>';
+    } else {
+      var waiting = Math.max(0, asked - d.witness_yes - d.witness_no - d.witness_unsure);
+      var part = function (n, cls) {
+        return n ? '<i class="' + cls + '" style="width:' + (n / asked) * 100 + '%"></i>' : "";
+      };
+      body =
+        '<div class="witness-bar" role="img" aria-label="Отговори на свидетели">' +
+        part(d.witness_yes, "yes") + part(d.witness_no, "no") + part(d.witness_unsure, "unsure") + part(waiting, "waiting") +
+        "</div>" +
+        '<p class="witness-counts"><span>Да: <b>' + d.witness_yes + "</b></span><span>Не: <b>" + d.witness_no +
+        "</b></span><span>Не виждат: <b>" + d.witness_unsure + "</b></span><span>Чакат: <b>" + waiting + "</b></span></p>";
+    }
+    if (d.reports_count > 1) {
+      var others = d.reports_count - 1;
+      body += '<p class="witness-more">' +
+        (others === 1 ? "Още 1 човек е подал" : "Още " + others + " души са подали") +
+        " отделен сигнал за същото място.</p>";
+    }
+    return '<section class="detail-section"><h3>Свидетели наблизо</h3>' + body + "</section>";
+  }
+
+  function teamsHtml(d) {
+    var canAssign = d.status === "new" || d.status === "assigned";
+    var list = d.team_candidates || [];
+    var body = list.length
+      ? list.map(function (team, i) {
+          return (
+            '<li class="candidate' + (i === 0 ? " preferred" : "") + '">' +
+            '<span class="candidate-main"><b>' + Vigora.escapeHtml(team.name) + "</b>" +
+            (i === 0 ? '<span class="pill pill-orange">Препоръчан</span>' : "") +
+            '<small>' + Vigora.escapeHtml(team.kind_label) + " · " + Vigora.escapeHtml(Vigora.formatDistance(team.distance_m)) +
+            " · около " + team.eta_min + " мин</small></span>" +
+            '<button type="button" class="btn btn-small ' + (i === 0 ? "btn-primary" : "btn-quiet") + '"' +
+            ' data-action="assign" data-team="' + team.id + '"' + (canAssign && !busy ? "" : " disabled") + ">Изпрати</button></li>"
+          );
+        }).join("")
+      : '<li class="hint">Няма свободен подходящ екип в момента.</li>';
+    return '<section class="detail-section"><h3>Екипи</h3><ul class="candidates">' + body + "</ul></section>";
+  }
+
+  function reportsHtml(d) {
+    var items = d.reports.map(function (r) {
+      var affected = r.people_affected > 0 ? r.people_affected + " засегнати" : "Брой засегнати не е посочен";
+      return (
+        '<li class="report"><p class="report-text' + (r.description ? "" : " empty") + '">' +
+        Vigora.escapeHtml(r.description || "Без описание") + "</p>" +
+        '<p class="report-meta">' + Vigora.clock(r.created_at) + " · " + Vigora.escapeHtml(affected) +
+        " · доверие на подателя: " + Math.round(r.reporter_trust) + "/100</p></li>"
+      );
+    });
+    return (
+      '<section class="detail-section"><h3>Сигнали от граждани (' + d.reports.length + ")</h3>" +
+      '<ul class="reports">' + items.join("") + "</ul></section>"
+    );
+  }
+
+  function photoNames(d) {
+    var names = d.reports.map(function (r) { return r.photo; }).filter(Boolean);
+    return names.concat(d.witness_photos || []);
+  }
+
+  function photosHtml(d) {
+    var names = photoNames(d);
+    if (!names.length) return "";
+    var items = names.map(function (name) {
+      var url = photoUrls.get(name);
+      return (
+        '<button type="button" class="photo" data-action="photo" data-name="' + Vigora.escapeHtml(name) + '" aria-label="Отвори снимката">' +
+        (url ? '<img src="' + url + '" alt="">' : '<span class="photo-loading"></span>') +
+        "</button>"
+      );
+    });
+    return '<section class="detail-section"><h3>Снимки</h3><div class="photos">' + items.join("") + "</div></section>";
+  }
+
+  function actionsHtml() {
+    return (
+      '<section class="detail-section detail-actions">' +
+      '<button type="button" class="btn btn-primary" data-action="resolve"' + (busy ? " disabled" : "") + ">Приключи</button>" +
+      '<button type="button" class="btn btn-quiet btn-outline-danger" data-action="false"' + (busy ? " disabled" : "") + ">Фалшив сигнал</button>" +
+      "</section>"
+    );
+  }
+
+  function historyHtml(d) {
+    var items = d.events.map(function (e) {
+      return '<li><time>' + Vigora.clock(e.created_at) + "</time><span>" + Vigora.escapeHtml(e.text) + "</span></li>";
+    });
+    return '<section class="detail-section"><h3>История</h3><ol class="history">' + items.join("") + "</ol></section>";
+  }
+
+  function renderDetail() {
+    if (!detail) return;
+    var d = detail;
+    var open = OPEN_STATUSES.indexOf(d.status) !== -1;
+    var scroll = detailBody.scrollTop;
+    detailBody.innerHTML =
+      headerHtml(d) +
+      breakdownHtml(d) +
+      witnessesHtml(d) +
+      (open ? teamsHtml(d) : "") +
+      reportsHtml(d) +
+      photosHtml(d) +
+      (open ? actionsHtml() : "") +
+      historyHtml(d);
+    detailBody.scrollTop = scroll;
+    loadPhotos(d);
+  }
+
+  // Photos need the login, so they are fetched with the token and shown as blob URLs.
+  function loadPhotos(d) {
+    photoNames(d).forEach(function (name) {
+      if (photoUrls.has(name)) return;
+      photoUrls.set(name, null); // loading
+      var session = Vigora.session;
+      fetch("/api/photos/" + encodeURIComponent(name), {
+        headers: session ? { Authorization: "Bearer " + session.access_token } : {},
+      })
+        .then(function (response) {
+          if (!response.ok) throw new Error("photo " + response.status);
+          return response.blob();
+        })
+        .then(function (blob) {
+          photoUrls.set(name, URL.createObjectURL(blob));
+          var button = detailBody.querySelector('.photo[data-name="' + CSS.escape(name) + '"]');
+          if (button) button.innerHTML = '<img src="' + photoUrls.get(name) + '" alt="">';
+        })
+        .catch(function () {
+          photoUrls.delete(name); // try again on the next render
+          var button = detailBody.querySelector('.photo[data-name="' + CSS.escape(name) + '"]');
+          if (button) button.innerHTML = '<span class="photo-error">Няма снимка</span>';
+        });
+    });
+  }
+
+  function forgetPhotos() {
+    photoUrls.forEach(function (url) { if (url) URL.revokeObjectURL(url); });
+    photoUrls = new Map();
+  }
+
+  // ---------- Detail actions ----------
+
+  async function runAction(path, body, doneText) {
+    if (busy || detailId === null) return;
+    busy = true;
+    renderDetail();
+    try {
+      var incident = await Vigora.request("/api/incidents/" + detailId + path, { method: "POST", json: body || {} });
+      Vigora.toast(doneText(incident));
+      applyIncident(incident, false);
+      loadStats();
+    } catch (e) {
+      Vigora.toast(e.message, { error: true });
+    } finally {
+      busy = false;
+      loadDetail();
+    }
+  }
+
+  var photoView = document.getElementById("photo-view");
+  var falseDialog = document.getElementById("false-dialog");
+
+  detailBody.addEventListener("click", function (event) {
+    var button = event.target.closest("[data-action]");
+    if (!button || button.disabled) return;
+    var action = button.dataset.action;
+    if (action === "close") {
+      selectedId = null;
+      renderQueue();
+      closeDetail();
+    } else if (action === "assign") {
+      var teamId = Number(button.dataset.team);
+      var team = (detail.team_candidates || []).filter(function (t) { return t.id === teamId; })[0];
+      runAction("/assign", { team_id: teamId }, function () {
+        return "Изпратен екип: " + (team ? team.name : "");
+      });
+    } else if (action === "resolve") {
+      runAction("/resolve", null, function () { return "Сигналът е приключен."; });
+    } else if (action === "false") {
+      falseDialog.showModal();
+    } else if (action === "photo") {
+      var url = photoUrls.get(button.dataset.name);
+      if (!url) return;
+      document.getElementById("photo-view-img").src = url;
+      photoView.showModal();
+    }
+  });
+
+  document.getElementById("false-confirm").addEventListener("click", function () {
+    runAction("/false", null, function () { return "Сигналът е отбелязан като фалшив."; });
+  });
+
+  // A click anywhere on the full-screen photo closes it.
+  photoView.addEventListener("click", function () {
+    photoView.close();
+  });
 
   // ---------- Loading and live changes ----------
 
@@ -240,6 +524,7 @@
       changedIds.add(incident.id);
     }
     renderQueue();
+    if (incident.id === detailId) loadDetail();
     if (isNew && incident.level === "critical") {
       Vigora.toast("Нов критичен сигнал: " + incident.type_label, { error: true, ms: 6000 });
     }
@@ -251,6 +536,8 @@
     selectedId = null;
     changedIds.clear();
     renderQueue();
+    closeDetail();
+    forgetPhotos();
   }
 
   // ---------- Teams ----------
@@ -336,6 +623,7 @@
     } else if (event === "team.updated") {
       showTeam(data);
       loadStats();
+      loadDetail(); // the free teams to choose from may have changed
     } else if (event === "demo.reset") {
       clearIncidents();
       loadStats();
@@ -348,6 +636,7 @@
     loadStats();
     loadTeams();
     loadIncidents();
+    loadDetail();
   }
 
   // ---------- Start and stop ----------

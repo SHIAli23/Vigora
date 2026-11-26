@@ -8,6 +8,7 @@ import MapView, { Marker } from "react-native-maps";
 import * as Haptics from "expo-haptics";
 
 import * as api from "./api";
+import IncidentDetail from "./IncidentDetail";
 import { people, timeAgo } from "./format";
 import { DARK_MAP, SOFIA } from "./sheets";
 import { alpha, colors, fonts } from "./theme";
@@ -191,6 +192,10 @@ export default function OperatorScreen({ onLogout }) {
   const [meta, setMeta] = useState(null);
   const [incidents, setIncidents] = useState(new Map()); // id -> summary
   const [selectedId, setSelectedId] = useState(null);
+  const [detailId, setDetailId] = useState(null); // the incident open in the detail sheet
+  const [detailVersion, setDetailVersion] = useState(0); // bumped to load the detail again
+  const detailIdRef = useRef(null);
+  detailIdRef.current = detailId;
   const [changed, setChanged] = useState({}); // id -> time of the last live change
   const [online, setOnline] = useState(false);
   const [toast, setToast] = useState(null);
@@ -245,6 +250,7 @@ export default function OperatorScreen({ onLogout }) {
     });
     if (closed) setSelectedId((id) => (id === incident.id ? null : id));
     else setChanged((old) => ({ ...old, [incident.id]: Date.now() }));
+    if (incident.id === detailIdRef.current) setDetailVersion((n) => n + 1);
     if (isNew && incident.level === "critical") {
       showToast("Нов критичен сигнал: " + incident.type_label, "error");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
@@ -255,6 +261,7 @@ export default function OperatorScreen({ onLogout }) {
     incidentsRequest.current++;
     setIncidents(new Map());
     setSelectedId(null);
+    setDetailId(null);
     setChanged({});
   }, []);
 
@@ -273,6 +280,7 @@ export default function OperatorScreen({ onLogout }) {
         loadStats();
         loadTeams();
         loadIncidents();
+        setDetailVersion((n) => n + 1);
       },
       onEvent: (event, data) => {
         if (event === "incident.created" || event === "incident.updated") {
@@ -281,6 +289,7 @@ export default function OperatorScreen({ onLogout }) {
         } else if (event === "team.updated") {
           setTeams((list) => list.map((t) => (t.id === data.id ? data : t)));
           loadStats();
+          setDetailVersion((n) => n + 1); // the free teams to choose from may have changed
         } else if (event === "demo.reset") {
           clearIncidents();
           loadStats();
@@ -299,6 +308,7 @@ export default function OperatorScreen({ onLogout }) {
 
   function select(incident) {
     setSelectedId(incident.id);
+    setDetailId(incident.id);
     mapRef.current?.animateToRegion(
       { latitude: incident.lat, longitude: incident.lng, latitudeDelta: 0.03, longitudeDelta: 0.03 },
       400
@@ -457,6 +467,16 @@ export default function OperatorScreen({ onLogout }) {
           <Button variant="ghost" title="Нулирай демото" onPress={confirmReset} />
         </View>
       </ScrollView>
+
+      <IncidentDetail
+        incidentId={detailId}
+        version={detailVersion}
+        onClose={() => setDetailId(null)}
+        onChanged={(summary) => {
+          applyIncident(summary, false);
+          loadStats();
+        }}
+      />
 
       <Toast toast={toast} />
     </View>

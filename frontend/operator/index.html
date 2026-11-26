@@ -80,7 +80,8 @@
     </section>
 
     <aside class="detail" aria-label="Детайли за сигнала">
-      <div class="detail-empty">
+      <div id="detail-body" class="detail-body hidden" aria-live="polite"></div>
+      <div class="detail-empty" id="detail-empty">
         <div class="detail-empty-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
         </div>
@@ -101,6 +102,26 @@
         <button value="confirm" class="btn btn-danger" id="reset-confirm">Нулирай</button>
       </div>
     </form>
+  </dialog>
+
+  <!-- False report confirmation -->
+  <dialog id="false-dialog" class="confirm" aria-labelledby="false-title">
+    <form method="dialog">
+      <h2 id="false-title">Фалшив сигнал?</h2>
+      <p>Доверието към подателите ще намалее.</p>
+      <div class="confirm-actions">
+        <button value="cancel" class="btn btn-quiet">Отказ</button>
+        <button value="confirm" class="btn btn-danger" id="false-confirm">Фалшив сигнал</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Photo, full screen -->
+  <dialog id="photo-view" class="photo-view" aria-label="Снимка">
+    <img id="photo-view-img" alt="Снимка към сигнала">
+    <button type="button" class="photo-view-close" aria-label="Затвори">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
   </dialog>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
