@@ -127,15 +127,18 @@ export async function request(path, options = {}) {
   return data;
 }
 
-function checkCitizen(result) {
-  if (result.user.role !== "citizen") {
-    throw new Error("Този акаунт не е на гражданин. Използвайте приложението за граждани с личен акаунт.");
+// The phone app has a citizen part and an operator part; team accounts use their own app.
+const APP_ROLES = ["citizen", "operator"];
+
+function checkRole(result) {
+  if (!APP_ROLES.includes(result.user.role)) {
+    throw new Error("Този акаунт е за друго приложение.");
   }
   return result;
 }
 
 export async function login(username, password) {
-  const result = checkCitizen(
+  const result = checkRole(
     await request("/api/auth/login", { method: "POST", json: { username, password } })
   );
   await setSession(result);

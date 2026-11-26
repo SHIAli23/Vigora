@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#070708">
+  <title>Vigora — Оператор 112</title>
+  <link rel="icon" href="/citizen/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="/shared/vigora.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-app="operator">
+
+  <!-- Login -->
+  <main id="login-screen" class="login-page hidden">
+    <div class="login-card">
+      <div class="wordmark">Vig<em>o</em>ra</div>
+      <p class="app-name">Оператор 112</p>
+
+      <form id="login-form" novalidate>
+        <div class="field">
+          <label for="username">Потребителско име</label>
+          <input id="username" name="username" autocomplete="username" autocapitalize="none"
+                 spellcheck="false" required>
+        </div>
+        <div class="field">
+          <label for="password">Парола</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
+        </div>
+        <p id="login-error" class="error-text hidden" role="alert"></p>
+        <button type="submit" class="btn btn-primary btn-block">Вход</button>
+      </form>
+
+      <div class="demo-accounts">
+        <p class="hint">Демо акаунт</p>
+        <div class="demo-list">
+          <button type="button" data-demo-user="operator" data-demo-pass="operator123">Оператор 112</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Panel -->
+  <div id="panel" class="panel hidden">
+    <header class="topbar">
+      <div class="brand">
+        <span class="wordmark">Vig<em>o</em>ra</span>
+        <span class="brand-role">Оператор 112</span>
+      </div>
+
+      <dl class="stats" id="stats" aria-label="Статистика за последните 24 часа">
+        <div class="stat"><dt>Активни</dt><dd id="stat-open">—</dd></div>
+        <div class="stat" id="stat-critical-box"><dt>Критични</dt><dd id="stat-critical">—</dd></div>
+        <div class="stat"><dt>Потвърдени</dt><dd id="stat-confirmed">—</dd></div>
+        <div class="stat"><dt>До потвърждение</dt><dd id="stat-confirm-time">—</dd></div>
+        <div class="stat"><dt>Свободни екипи</dt><dd id="stat-teams">—</dd></div>
+        <div class="stat"><dt>Граждани онлайн</dt><dd id="stat-online">—</dd></div>
+      </dl>
+
+      <div class="topbar-actions">
+        <span id="conn" class="conn offline">Свързване…</span>
+        <button type="button" class="btn btn-quiet btn-small" id="reset-demo">Нулирай демото</button>
+        <button type="button" class="btn btn-quiet btn-small" id="logout">Изход</button>
+      </div>
+    </header>
+
+    <section class="queue" aria-labelledby="queue-title">
+      <div class="column-head">
+        <h2 id="queue-title">Сигнали по спешност</h2>
+        <span class="hint" id="queue-count"></span>
+      </div>
+      <div id="queue-list" class="queue-list"></div>
+    </section>
+
+    <section class="map-column" aria-label="Карта">
+      <div id="map" class="map"></div>
+      <div class="legend" id="legend" aria-label="Легенда"></div>
+    </section>
+
+    <aside class="detail" aria-label="Детайли за сигнала">
+      <div id="detail-body" class="detail-body hidden" aria-live="polite"></div>
+      <div class="detail-empty" id="detail-empty">
+        <div class="detail-empty-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        </div>
+        <h2>Изберете сигнал</h2>
+        <p class="hint">Изберете сигнал от списъка вляво или от картата, за да видите подробностите и да изпратите екип.</p>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Demo reset confirmation -->
+  <dialog id="reset-dialog" class="confirm" aria-labelledby="reset-title">
+    <form method="dialog">
+      <h2 id="reset-title">Нулиране на демото</h2>
+      <p>Всички сигнали, свидетелски отговори и задачи ще бъдат изтрити, а екипите ще станат свободни.
+        Акаунтите остават. Това не може да се отмени.</p>
+      <div class="confirm-actions">
+        <button value="cancel" class="btn btn-quiet">Отказ</button>
+        <button value="confirm" class="btn btn-danger" id="reset-confirm">Нулирай</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- False report confirmation -->
+  <dialog id="false-dialog" class="confirm" aria-labelledby="false-title">
+    <form method="dialog">
+      <h2 id="false-title">Фалшив сигнал?</h2>
+      <p>Доверието към подателите ще намалее.</p>
+      <div class="confirm-actions">
+        <button value="cancel" class="btn btn-quiet">Отказ</button>
+        <button value="confirm" class="btn btn-danger" id="false-confirm">Фалшив сигнал</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Photo, full screen -->
+  <dialog id="photo-view" class="photo-view" aria-label="Снимка">
+    <img id="photo-view-img" alt="Снимка към сигнала">
+    <button type="button" class="photo-view-close" aria-label="Затвори">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </dialog>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="/shared/vigora.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

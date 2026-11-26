@@ -349,7 +349,8 @@ export function TypeIcon({ type, size = 46 }) {
 
 // ---------- Toast ----------
 
-export function Toast({ toast }) {
+// top: the distance from the top; by default just under the header of the screen.
+export function Toast({ toast, top }) {
   const shown = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
   useEffect(() => {
@@ -368,7 +369,7 @@ export function Toast({ toast }) {
       pointerEvents="none"
       style={[
         styles.toast,
-        { top: insets.top + 56, borderColor: alpha(tone, 0.5) },
+        { top: top ?? insets.top + 56, borderColor: alpha(tone, 0.5) },
         { opacity: shown, transform: [{ translateY: shown.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }] },
       ]}
     >
@@ -380,7 +381,8 @@ export function Toast({ toast }) {
 
 // ---------- Bottom sheet ----------
 
-export function Sheet({ visible, onClose, title, icon, children, scroll = true }) {
+// overlay: shown above the content without scrolling with it, e.g. a toast.
+export function Sheet({ visible, onClose, title, icon, children, scroll = true, overlay }) {
   const insets = useSafeAreaInsets();
   const Body = scroll ? ScrollView : View;
   return (
@@ -403,6 +405,7 @@ export function Sheet({ visible, onClose, title, icon, children, scroll = true }
           <Body keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             {children}
           </Body>
+          {overlay}
         </View>
       </KeyboardAvoidingView>
     </Modal>

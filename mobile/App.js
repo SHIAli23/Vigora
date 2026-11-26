@@ -10,6 +10,7 @@ import { Unbounded_600SemiBold } from "@expo-google-fonts/unbounded";
 import * as api from "./src/api";
 import HomeScreen from "./src/HomeScreen";
 import LoginScreen from "./src/LoginScreen";
+import OperatorScreen from "./src/OperatorScreen";
 import { colors } from "./src/theme";
 import { Backdrop } from "./src/ui";
 
@@ -42,6 +43,8 @@ export default function App() {
           <View style={styles.center}>
             <ActivityIndicator color={colors.orange} size="large" />
           </View>
+        ) : session && session.user.role === "operator" ? (
+          <OperatorScreen key={session.user.id} onLogout={() => setSession(null)} />
         ) : session ? (
           <HomeScreen key={session.user.id} session={session} onLogout={() => setSession(null)} />
         ) : (

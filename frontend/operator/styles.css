@@ -1,0 +1,888 @@
+/* Operator 112 panel. Desktop first, calm: color only where urgency matters. */
+
+body[data-app="operator"] {
+  background: var(--canvas);
+}
+
+/* ---------- Layout: top bar, then queue | map | detail ---------- */
+
+.panel {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr) 400px;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    "top top top"
+    "queue map detail";
+  height: 100vh;
+  height: 100dvh;
+}
+
+.panel.hidden {
+  display: none;
+}
+
+.topbar { grid-area: top; }
+.queue { grid-area: queue; }
+.map-column { grid-area: map; }
+.detail { grid-area: detail; }
+
+/* ---------- Top bar ---------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-height: 64px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, #111113, #0c0c0e);
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex: none;
+}
+
+.brand .wordmark {
+  font-size: 19px;
+}
+
+.brand-role {
+  padding-left: 12px;
+  border-left: 1px solid var(--line-strong);
+  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.stats {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  min-width: 0;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 96px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.stat dt {
+  color: var(--ink-faint);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.stat dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+
+.stat dd.changed {
+  animation: stat-flash 1.2s ease-out;
+}
+
+/* Critical incidents are the one place the bar turns red. */
+.stat.alert {
+  border-color: rgba(240, 68, 56, 0.55);
+  background: var(--red-soft);
+}
+
+.stat.alert dt,
+.stat.alert dd {
+  color: #ff7a70;
+}
+
+@keyframes stat-flash {
+  from { color: var(--orange-bright); }
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.topbar-actions .conn {
+  margin-right: 6px;
+}
+
+.btn-small {
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--line-strong);
+  font-size: 14px;
+}
+
+/* ---------- Columns ---------- */
+
+.queue,
+.detail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface);
+}
+
+.queue {
+  border-right: 1px solid var(--line);
+}
+
+.detail {
+  border-left: 1px solid var(--line);
+}
+
+.column-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.column-head h2 {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+
+.queue-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.queue-empty {
+  margin: 8px 6px;
+  padding: 22px 18px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 14px;
+  text-align: center;
+}
+
+.queue-empty p {
+  margin: 0;
+}
+
+.queue-empty p + p {
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+/* ---------- Tickets ---------- */
+
+/* The urgency level gives the only strong color of a ticket. */
+.ticket {
+  --level: var(--ink-faint);
+  --level-soft: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 10px 12px 10px 10px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--level);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.ticket:hover {
+  background: var(--surface-3);
+}
+
+.ticket.level-critical { --level: var(--red); --level-soft: var(--red-soft); }
+.ticket.level-high { --level: var(--amber); --level-soft: var(--amber-soft); }
+.ticket.level-medium { --level: var(--blue); --level-soft: var(--blue-soft); }
+.ticket.level-low { --level: var(--ink-faint); --level-soft: rgba(255, 255, 255, 0.05); }
+
+.ticket.selected {
+  border-color: var(--orange);
+  border-left-color: var(--level);
+  background: #221a14;
+  box-shadow: 0 0 0 1px var(--orange);
+}
+
+/* Briefly highlighted after a live change. */
+.ticket.changed {
+  animation: ticket-flash 1.6s ease-out;
+}
+
+@keyframes ticket-flash {
+  from { background-color: rgba(255, 107, 26, 0.22); }
+}
+
+.ticket-score {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  padding: 6px 4px;
+  border-radius: 9px;
+  background: var(--level-soft);
+  color: var(--level);
+}
+
+.ticket-score b {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.ticket-score small {
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ticket-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ticket-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ticket-type {
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ticket-time {
+  flex: none;
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.ticket-people {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.ticket-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.ticket-pills .pill {
+  padding: 1px 8px;
+  font-size: 12px;
+}
+
+/* ---------- Map ---------- */
+
+.map-column {
+  position: relative;
+  min-height: 0;
+}
+
+.map {
+  position: absolute;
+  inset: 0;
+  background: #0d0d0f;
+}
+
+.legend {
+  position: absolute;
+  left: 12px;
+  bottom: 24px;
+  z-index: 500;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  max-width: calc(100% - 24px);
+  padding: 9px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: rgba(14, 14, 16, 0.92);
+  color: var(--ink-soft);
+  font-size: 12px;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.legend:empty {
+  display: none;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--dot);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
+}
+
+/* A small copy of the team marker. */
+.legend-team {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--orange);
+  border-radius: 4px;
+  background: #0b0b0c;
+  color: var(--orange-bright);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+/* Team tooltip */
+.leaflet-tooltip.team-tip {
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: #18181b;
+  color: var(--ink);
+  font: 13px/1.4 var(--font);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+}
+
+.leaflet-tooltip.team-tip::before {
+  border-top-color: #18181b;
+}
+
+.tip-status {
+  font-size: 12px;
+}
+
+.tip-status.free {
+  color: var(--teal-bright);
+}
+
+.tip-status.busy {
+  color: var(--ink-faint);
+}
+
+/* ---------- Detail ---------- */
+
+.detail-empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  text-align: center;
+}
+
+.detail-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+  background: var(--surface-2);
+  color: var(--ink-faint);
+}
+
+.detail-empty h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.detail-empty .hint {
+  max-width: 280px;
+  margin: 0;
+  font-size: 14px;
+}
+
+/* ---------- Detail of the selected incident ---------- */
+
+.detail-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.detail-loading {
+  padding: 24px 18px;
+}
+
+.detail-head {
+  --level: var(--ink-faint);
+  --level-soft: rgba(255, 255, 255, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+  border-left: 4px solid var(--level);
+  background: var(--surface);
+}
+
+.detail-head.level-critical { --level: var(--red); --level-soft: var(--red-soft); }
+.detail-head.level-high { --level: var(--amber); --level-soft: var(--amber-soft); }
+.detail-head.level-medium { --level: var(--blue); --level-soft: var(--blue-soft); }
+
+.detail-score {
+  width: 78px;
+  padding: 9px 4px;
+}
+
+.detail-score b {
+  font-size: 32px;
+}
+
+.detail-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.detail-title h2 {
+  margin: 0;
+  font-size: 19px;
+  letter-spacing: -0.01em;
+}
+
+.detail-title p {
+  margin: 3px 0 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.detail-close {
+  flex: none;
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+
+.detail-close:hover {
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+.detail-section {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.detail-section h3 {
+  margin: 0 0 10px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.detail-section .hint {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Urgency breakdown */
+.breakdown {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.breakdown td {
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+
+.breakdown td.num {
+  width: 64px;
+  color: var(--ink);
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.breakdown .minus {
+  color: #ff7a70;
+}
+
+.breakdown tr.total td {
+  border-bottom: 0;
+  padding-top: 8px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* Witnesses */
+.witness-bar {
+  display: flex;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.witness-bar i { display: block; height: 100%; }
+.witness-bar .yes { background: var(--green); }
+.witness-bar .no { background: var(--red); }
+.witness-bar .unsure { background: #8a8a93; }
+.witness-bar .waiting { background: rgba(255, 255, 255, 0.1); }
+
+.witness-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 8px 0 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.witness-counts b {
+  color: var(--ink);
+}
+
+.witness-more {
+  margin: 10px 0 0;
+  font-size: 14px;
+}
+
+/* Teams to send */
+.candidates,
+.reports,
+.history {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.candidate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.candidate.preferred {
+  border-color: rgba(255, 107, 26, 0.5);
+  background: #1f1712;
+}
+
+.candidate-main {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+}
+
+.candidate-main b {
+  font-size: 14px;
+}
+
+.candidate-main .pill {
+  padding: 0 8px;
+  font-size: 11px;
+}
+
+.candidate-main small {
+  flex-basis: 100%;
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.candidate .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Reports from citizens */
+.report {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.report:last-child {
+  border-bottom: 0;
+}
+
+.report-text {
+  margin: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.report-text.empty {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+.report-meta {
+  margin: 3px 0 0;
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+/* Photos */
+.photos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.photo {
+  aspect-ratio: 1;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface-2);
+  cursor: zoom-in;
+}
+
+.photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-loading,
+.photo-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.photo-loading {
+  background: linear-gradient(90deg, var(--surface-2), var(--surface-3), var(--surface-2));
+  background-size: 200% 100%;
+  animation: photo-wait 1.2s linear infinite;
+}
+
+@keyframes photo-wait {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+.photo-view {
+  max-width: 100vw;
+  max-height: 100vh;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 24px;
+  border: 0;
+  background: rgba(0, 0, 0, 0.92);
+  cursor: zoom-out;
+}
+
+.photo-view[open] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photo-view img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.photo-view-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: rgba(24, 24, 27, 0.9);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+/* Close and false report */
+.detail-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.btn-outline-danger {
+  border: 1px solid rgba(240, 68, 56, 0.5);
+  color: #ff7a70;
+}
+
+.btn-outline-danger:hover:not(:disabled) {
+  background: var(--red-soft);
+}
+
+/* History */
+.history li {
+  display: flex;
+  gap: 10px;
+  padding: 4px 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.history time {
+  flex: none;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Reset confirmation ---------- */
+
+.confirm {
+  width: min(440px, calc(100% - 32px));
+  padding: 22px;
+  border: 1px solid var(--line-strong);
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+}
+
+.confirm::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.confirm h2 {
+  margin: 0 0 8px;
+  font-size: 19px;
+}
+
+.confirm p {
+  margin: 0 0 20px;
+  color: var(--ink-soft);
+  font-size: 15px;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ---------- Narrow screens: stack the columns ---------- */
+
+@media (max-width: 1200px) {
+  .panel {
+    grid-template-columns: 320px minmax(0, 1fr) 340px;
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+    gap: 12px 20px;
+  }
+
+  .stats {
+    order: 3;
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 900px) {
+  .panel {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .topbar-actions {
+    margin-left: auto;
+  }
+
+  .stat {
+    flex: 1 1 calc(33% - 6px);
+    min-width: 0;
+  }
+
+  .map-column {
+    height: 55vh;
+    order: -1;
+  }
+
+  .queue,
+  .detail {
+    border: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .queue-list {
+    overflow: visible;
+  }
+}
+
+@media (max-width: 900px) {
+  /* The map sits right under the top bar. */
+  .topbar { order: -2; }
+}
