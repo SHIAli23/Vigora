@@ -4,6 +4,7 @@ from datetime import datetime
 
 from app.models import Incident, Team, WitnessRequest
 from app.realtime import manager
+from app.services import push
 from app.services.incidents import STATUS_LABELS, incident_summary, team_view
 from app.services.witnesses import question_view
 
@@ -37,6 +38,14 @@ async def team_changed(team: Team) -> None:
 
 
 async def witness_questions(incident: Incident, requests: list[WitnessRequest]) -> None:
-    """Ask each nearby citizen whether they can confirm the incident."""
+    """Ask each nearby citizen whether they can confirm the incident.
+
+    An open app gets the question over WebSocket. A citizen whose app is closed gets a push
+    notification instead, if they allowed it.
+    """
     for request in requests:
-        await manager.to_user(request.user_id, "witness.question", question_view(request))
+        question = question_view(request)
+        if manager.is_connected(request.user_id):
+            await manager.to_user(request.user_id, "witness.question", question)
+        elif push.push_enabled():
+            push.queue(request.user_id, push.question_payload(question))

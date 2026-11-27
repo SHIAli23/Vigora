@@ -36,3 +36,21 @@ class AssignIn(BaseModel):
 
 class TeamStatusIn(BaseModel):
     status: Literal["accepted", "on_scene", "resolved"]
+
+
+class PushKeys(BaseModel):
+    """The browser's keys for encrypting the notification."""
+
+    p256dh: str = Field(min_length=1, max_length=200)
+    auth: str = Field(min_length=1, max_length=100)
+
+
+class PushSubscriptionIn(BaseModel):
+    """What the browser's pushManager.subscribe() returns (subscription.toJSON())."""
+
+    endpoint: str = Field(min_length=1, max_length=1000)
+    keys: PushKeys
+
+
+class PushUnsubscribeIn(BaseModel):
+    endpoint: str = Field(min_length=1, max_length=1000)

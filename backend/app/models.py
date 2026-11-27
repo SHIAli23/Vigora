@@ -149,3 +149,20 @@ class IncidentEvent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     incident: Mapped["Incident"] = relationship(back_populates="events")
+
+
+class PushSubscription(Base):
+    """A browser where a citizen allowed notifications for witness questions.
+
+    Only the push service address and the browser's encryption keys are stored, never a location.
+    """
+
+    __tablename__ = "push_subscriptions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    # One row per browser: the push service gives each browser its own address.
+    endpoint: Mapped[str] = mapped_column(String(1000), unique=True)
+    p256dh: Mapped[str] = mapped_column(String(200))
+    auth: Mapped[str] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

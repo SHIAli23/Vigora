@@ -28,6 +28,13 @@ class Settings(BaseSettings):
     seed_demo_data: bool = True
     frontend_dir: Path = PROJECT_DIR / "frontend"
 
+    # Web Push for witness questions when the app is closed. Empty keys = push is off.
+    # Generate a pair with: python -m scripts.vapid_keys
+    vapid_public_key: str = ""
+    vapid_private_key: str = ""
+    # Contact address the push services can use if something goes wrong.
+    vapid_subject: str = "mailto:admin@example.com"
+
     @field_validator("database_url")
     @classmethod
     def use_psycopg_driver(cls, url: str) -> str:
