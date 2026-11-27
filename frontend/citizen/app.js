@@ -99,7 +99,9 @@
 
   Vigora.setupLogin({ role: "citizen", onSuccess: startApp });
 
-  document.getElementById("logout").addEventListener("click", function () {
+  document.getElementById("logout").addEventListener("click", async function () {
+    // The next person on this browser must not get this citizen's witness questions.
+    await disableNotifications();
     Vigora.logout();
     socket = null;
     if (reportSheet.open) reportSheet.close();
@@ -487,8 +489,79 @@
       shareLocation();
       // Only when the citizen just switched it on, not when the choice is restored on load.
       if (remember && !currentLocation()) Vigora.toast("Изберете местоположението си на картата.");
-    } else if (socket) {
-      socket.send({ type: "location_off" });
+      // Asking for notification permission must come from a click, so only then may we ask.
+      enableNotifications(remember);
+    } else {
+      if (socket) socket.send({ type: "location_off" });
+      // Only when the citizen turns it off. A new tab starts with the switch off (for example
+      // when opened from a notification), and that must not cancel the notifications.
+      if (remember) disableNotifications();
+    }
+  }
+
+  // ---------- Witness mode: notifications when the app is closed ----------
+
+  var SW_URL = "/citizen/sw.js";
+
+  function pushSupported() {
+    return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  }
+
+  // The server's public key comes as base64url; the browser wants raw bytes.
+  function keyToBytes(base64url) {
+    var padded = (base64url + "===".slice((base64url.length + 3) % 4)).replace(/-/g, "+").replace(/_/g, "/");
+    var raw = atob(padded);
+    var bytes = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+    return bytes;
+  }
+
+  // askPermission is true only right after the citizen turned witness mode on. When the choice
+  // is restored on load we only renew an existing permission and never show the browser prompt.
+  async function enableNotifications(askPermission) {
+    if (!pushSupported()) return;
+    try {
+      var config = await Vigora.request("/api/push/key");
+      if (!config.enabled) return;
+
+      var permission = Notification.permission;
+      if (permission === "default" && askPermission) permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        if (askPermission && permission === "denied") {
+          Vigora.toast("Известията са спрени в браузъра. Въпросите ще идват само докато приложението е отворено.");
+        }
+        return;
+      }
+
+      var registration = await navigator.serviceWorker.register(SW_URL);
+      await navigator.serviceWorker.ready;
+      var subscription = await registration.pushManager.getSubscription();
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: keyToBytes(config.public_key),
+        });
+      }
+      var data = subscription.toJSON();
+      await Vigora.request("/api/push/subscribe", {
+        method: "POST",
+        json: { endpoint: data.endpoint, keys: data.keys },
+      });
+    } catch (e) {
+      // Notifications are an extra: witness questions still work while the app is open.
+    }
+  }
+
+  async function disableNotifications() {
+    if (!pushSupported()) return;
+    try {
+      var registration = await navigator.serviceWorker.getRegistration(SW_URL);
+      var subscription = registration && (await registration.pushManager.getSubscription());
+      if (!subscription) return;
+      await Vigora.request("/api/push/subscribe", { method: "DELETE", json: { endpoint: subscription.endpoint } });
+      await subscription.unsubscribe();
+    } catch (e) {
+      /* nothing to undo */
     }
   }
 

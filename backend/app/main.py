@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import Base, SessionLocal, engine
-from app.routers import auth, incidents, meta, reports, teams, witness, ws
+from app.routers import auth, incidents, meta, push, reports, teams, witness, ws
 from app.seed import seed_demo_data
 
 
@@ -33,6 +33,7 @@ app.include_router(incidents.router)
 app.include_router(teams.router)
 app.include_router(meta.router)
 app.include_router(witness.router)
+app.include_router(push.router)
 app.include_router(ws.router)
 
 

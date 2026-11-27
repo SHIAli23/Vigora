@@ -10,6 +10,7 @@ from typing import Any
 from fastapi import WebSocket
 
 from app.models import CITIZEN, OPERATOR
+from app.services import push
 from app.services.witnesses import LocationStore
 
 
@@ -37,9 +38,16 @@ class ConnectionManager:
     def disconnect(self, conn: Connection) -> None:
         if conn in self.connections:
             self.connections.remove(conn)
-        # A citizen's location is only kept while they have at least one open connection.
-        if conn.role == CITIZEN and not any(c.user_id == conn.user_id for c in self.connections):
-            self.locations.remove(conn.user_id)
+        # A citizen's location is only kept while they have at least one open connection,
+        # unless they allowed notifications: then they can still be asked as a witness until the
+        # location expires (LOCATION_MAX_AGE_MIN).
+        if conn.role == CITIZEN and not self.is_connected(conn.user_id):
+            if not push.keeps_location_after_close(conn.user_id):
+                self.locations.remove(conn.user_id)
+
+    def is_connected(self, user_id: int) -> bool:
+        """Whether the user has at least one open connection."""
+        return any(c.user_id == user_id for c in self.connections)
 
     async def _send(self, targets: Iterable[Connection], event: str, data: Any) -> None:
         """Send one event to all targets at once. Connections that fail are dropped."""
