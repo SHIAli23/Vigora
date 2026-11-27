@@ -1,28 +1,42 @@
-"""Load simulator: virtual citizens send reports in clusters and answer witness questions.
+"""Load simulator: virtual citizens send reports in clusters and answer witness questions,
+and the run is measured.
 
 Run from the backend folder while the server is running:
 
     python -m scripts.simulate --citizens 50 --reports 200 --url http://localhost:8000
+    python -m scripts.simulate --demo --sweep          # 10, 50 and 100 citizens, clean data
 
 What it does:
-- logs in as the demo operator (to read the stats at the end),
+- logs in as the demo operator and listens on the operator's WebSocket,
 - registers N virtual citizens (sim-<run>-<n>) and connects each one over WebSocket,
   sharing a location near one of 5 hotspots in Sofia,
 - creates events (a type and a point near a hotspot) and lets several citizens report the
   same event within a short time, spread over the run,
 - keeps every citizen under the server's limit of 5 reports per 10 minutes,
 - answers witness questions after 1-5 s: 80% yes, 10% no, 10% unsure.
+
+What it measures:
+- report -> operator delivery: from sending a report until the operator's WebSocket gets
+  the incident event that report caused (average, median, 95th percentile),
+- first report -> first witness "yes" for each new incident,
+- duplicate detection: real events against incidents created, correctly merged reports,
+  wrongly split reports and real events wrongly joined to another incident.
+
+Results are saved to docs/results/<date-time>.csv and printed as a Markdown table.
 """
 
 import argparse
 import asyncio
+import csv
 import json
 import math
 import random
 import secrets
 import time
-from collections import Counter, deque
+from collections import Counter, defaultdict, deque
 from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
 
 import httpx
 import websockets
@@ -35,6 +49,9 @@ RATE_LIMIT_WINDOW_S = 10 * 60
 
 # A shared location is forgotten by the server after 10 minutes, so it is sent again.
 LOCATION_REFRESH_S = 60
+
+SWEEP_CITIZENS = (10, 50, 100)
+RESULTS_DIR = Path(__file__).resolve().parents[2] / "docs" / "results"
 
 HOTSPOTS = [
     ("Център", 42.6977, 23.3219),
@@ -135,6 +152,118 @@ def plan(
     return events, planned
 
 
+# ---------- Measurements (pure, so they can be tested) ----------
+
+
+@dataclass
+class ReportRecord:
+    """One report the server accepted."""
+
+    event_id: int  # the real event the script meant
+    incident_id: int  # where the server put it
+    merged: bool
+    sent_at: float  # monotonic time the report was sent
+
+
+def percentile(values: list[float], p: float) -> float | None:
+    """The p-th percentile (nearest rank), or None for no values."""
+    if not values:
+        return None
+    ordered = sorted(values)
+    rank = max(math.ceil(p / 100 * len(ordered)), 1)
+    return ordered[rank - 1]
+
+
+def describe(values: list[float]) -> dict[str, float | None]:
+    """Average, median and 95th percentile."""
+    return {
+        "avg": sum(values) / len(values) if values else None,
+        "median": percentile(values, 50),
+        "p95": percentile(values, 95),
+    }
+
+
+def match_deliveries(
+    records: list[ReportRecord], report_events: dict[int, list[float]]
+) -> tuple[list[float], int]:
+    """Pair each report with the operator event it caused. Returns (seconds, unmatched).
+
+    report_events holds, per incident, the times the operator received an event caused by
+    a new report. Per incident, reports are paired in the order they were sent with the
+    first unused event that arrived after the report was sent.
+    """
+    sends: dict[int, list[float]] = defaultdict(list)
+    for record in records:
+        sends[record.incident_id].append(record.sent_at)
+
+    delays: list[float] = []
+    unmatched = 0
+    for incident_id, times in sends.items():
+        arrivals = sorted(report_events.get(incident_id, []))
+        index = 0
+        for sent_at in sorted(times):
+            while index < len(arrivals) and arrivals[index] < sent_at:
+                index += 1
+            if index < len(arrivals):
+                delays.append(arrivals[index] - sent_at)
+                index += 1
+            else:
+                unmatched += 1
+    return delays, unmatched
+
+
+def time_to_first_yes(
+    records: list[ReportRecord], first_yes: dict[int, float]
+) -> list[float]:
+    """Seconds from the first report of each new incident to its first witness "yes"."""
+    created: dict[int, float] = {}
+    for record in records:
+        if not record.merged:
+            created[record.incident_id] = min(
+                record.sent_at, created.get(record.incident_id, record.sent_at)
+            )
+    return [first_yes[i] - t for i, t in created.items() if i in first_yes]
+
+
+def dedup_quality(records: list[ReportRecord]) -> dict[str, float | int | None]:
+    """Compare where the server put each report with the real event behind it.
+
+    Each real event is anchored to the incident its first new-incident report created.
+    An event with no such report was joined to another incident (two events became one).
+    Every other report of the event is correctly merged if it went to the anchor incident,
+    otherwise wrongly split.
+    """
+    ordered = sorted(records, key=lambda r: r.sent_at)
+    by_event: dict[int, list[ReportRecord]] = defaultdict(list)
+    for record in ordered:
+        by_event[record.event_id].append(record)
+
+    correctly_merged = wrongly_split = events_joined = 0
+    for event_records in by_event.values():
+        creators = [r for r in event_records if not r.merged]
+        anchor = creators[0] if creators else event_records[0]
+        if not creators:
+            events_joined += 1
+        for record in event_records:
+            if record is anchor:
+                continue
+            if record.incident_id == anchor.incident_id:
+                correctly_merged += 1
+            else:
+                wrongly_split += 1
+
+    expected = len(ordered) - len(by_event)
+    return {
+        "events": len(by_event),
+        "incidents_created": sum(1 for r in ordered if not r.merged),
+        "expected_duplicates": expected,
+        "correctly_merged": correctly_merged,
+        "wrongly_split": wrongly_split,
+        "events_joined": events_joined,
+        "dedup_accuracy_pct": round(100 * correctly_merged / expected, 1) if expected else None,
+    }
+
+
 # ---------- Virtual citizens ----------
 
 
@@ -165,8 +294,12 @@ class Stats:
     counts: Counter = field(default_factory=Counter)
     answers: Counter = field(default_factory=Counter)
     latencies: list = field(default_factory=list)
-    incidents: set = field(default_factory=set)
     errors: Counter = field(default_factory=Counter)
+    records: list = field(default_factory=list)  # ReportRecord for each accepted report
+    # What the operator's WebSocket saw, as monotonic arrival times:
+    report_events: dict = field(default_factory=lambda: defaultdict(list))
+    first_yes: dict = field(default_factory=dict)
+    last_report_at: dict = field(default_factory=dict)
 
 
 class Simulator:
@@ -194,6 +327,9 @@ class Simulator:
         task.add_done_callback(self.tasks.discard)
         return task
 
+    def operator_headers(self) -> dict[str, str]:
+        return {"Authorization": f"Bearer {self.operator_token}"}
+
     # ----- Setup -----
 
     async def login_operator(self) -> None:
@@ -202,6 +338,10 @@ class Simulator:
         )
         response.raise_for_status()
         self.operator_token = response.json()["access_token"]
+
+    async def reset_demo(self) -> None:
+        response = await self.client.post("/api/demo/reset", headers=self.operator_headers())
+        response.raise_for_status()
 
     async def register(self, citizen: Citizen, limit: asyncio.Semaphore) -> None:
         async with limit:
@@ -223,7 +363,40 @@ class Simulator:
         _, h_lat, h_lng = HOTSPOTS[citizen.hotspot]
         citizen.lat, citizen.lng = offset_point(h_lat, h_lng, CITIZEN_SPREAD_M, self.rng)
 
-    # ----- WebSocket: location and witness questions -----
+    # ----- Operator WebSocket: what reaches the operator's screen, and when -----
+
+    async def operator_socket(self, connected: asyncio.Event) -> None:
+        url = f"{self.ws_base}/ws?token={self.operator_token}"
+        try:
+            async with websockets.connect(url, open_timeout=15, max_size=None) as ws:
+                connected.set()
+                while not self.stopping.is_set():
+                    try:
+                        raw = await asyncio.wait_for(ws.recv(), timeout=1)
+                    except asyncio.TimeoutError:
+                        continue
+                    arrived = time.monotonic()
+                    message = json.loads(raw)
+                    self.on_operator_event(message.get("event"), message.get("data") or {}, arrived)
+        except Exception as error:  # noqa: BLE001 - counted, the run goes on without it
+            self.stats.errors[f"operator websocket: {type(error).__name__}"] += 1
+        finally:
+            connected.set()
+
+    def on_operator_event(self, event: str | None, data: dict, arrived: float) -> None:
+        if event not in ("incident.created", "incident.updated"):
+            return
+        incident_id = data["id"]
+        # A witness answer also sends incident.updated. Only a new report changes
+        # last_report_at, so that is how an event caused by a report is recognized.
+        last = data.get("last_report_at")
+        if event == "incident.created" or last != self.stats.last_report_at.get(incident_id):
+            self.stats.report_events[incident_id].append(arrived)
+            self.stats.last_report_at[incident_id] = last
+        if data.get("witness_yes", 0) > 0 and incident_id not in self.stats.first_yes:
+            self.stats.first_yes[incident_id] = arrived
+
+    # ----- Citizen WebSocket: location and witness questions -----
 
     async def citizen_socket(self, citizen: Citizen, connected: asyncio.Event) -> None:
         url = f"{self.ws_base}/ws?token={citizen.token}"
@@ -317,7 +490,14 @@ class Simulator:
             self.stats.counts["reports_ok"] += 1
             self.stats.counts["merged" if body["merged"] else "new_incidents"] += 1
             self.stats.counts["witnesses_asked"] += body["witnesses_asked"]
-            self.stats.incidents.add(body["incident_id"])
+            self.stats.records.append(
+                ReportRecord(
+                    event_id=event.id,
+                    incident_id=body["incident_id"],
+                    merged=body["merged"],
+                    sent_at=started,
+                )
+            )
         elif response.status_code == 429:
             self.stats.counts["rate_limited"] += 1
         else:
@@ -325,7 +505,7 @@ class Simulator:
 
     # ----- Run -----
 
-    async def run(self) -> None:
+    async def run(self) -> dict:
         args = self.args
         capacity = args.citizens * RATE_LIMIT_COUNT
         if args.reports > capacity:
@@ -341,6 +521,13 @@ class Simulator:
 
             await self.login_operator()
             self.log("logged in as operator")
+            if args.demo:
+                await self.reset_demo()
+                self.log("demo data reset")
+
+            operator_ready = asyncio.Event()
+            self.spawn(self.operator_socket(operator_ready))
+            await operator_ready.wait()
 
             self.citizens = [
                 Citizen(n=n, username=f"sim-{self.run_id}-{n}") for n in range(1, args.citizens + 1)
@@ -375,13 +562,15 @@ class Simulator:
                 if index % step == 0 or index == len(planned):
                     self.progress(index, len(planned))
 
-            # Let the last reports and witness answers (up to 5 s) finish.
-            await asyncio.sleep(6)
+            # Let the last reports and witness answers (up to 5 s) finish and reach the operator.
+            await asyncio.sleep(7)
             self.stopping.set()
             if self.tasks:
                 await asyncio.wait(set(self.tasks), timeout=15)
 
-            await self.summary(events)
+            result = self.result(len(planned))
+            await self.summary(result)
+            return result
 
     def progress(self, sent: int, total: int) -> None:
         c = self.stats.counts
@@ -391,57 +580,133 @@ class Simulator:
             f"questions {c['questions']}, answers {sum(self.stats.answers.values())}"
         )
 
-    async def summary(self, events: list[Event]) -> None:
-        c = self.stats.counts
-        answers = self.stats.answers
-        latencies = sorted(self.stats.latencies)
+    def result(self, reports_sent: int) -> dict:
+        """All measurements of this run, as one row for the CSV file."""
+        s = self.stats
+        deliveries, unmatched = match_deliveries(s.records, s.report_events)
+        delivery = describe([d * 1000 for d in deliveries])
+        first_yes = describe(time_to_first_yes(s.records, s.first_yes))
+        http = describe([t * 1000 for t in s.latencies])
+        dedup = dedup_quality(s.records)
+
+        def rounded(value: float | None, digits: int = 0) -> float | int | None:
+            if value is None:
+                return None
+            return round(value, digits) if digits else round(value)
+
+        return {
+            "run": f"sim-{self.run_id}",
+            "citizens": len(self.citizens),
+            "citizens_connected": s.counts["connected"],
+            "reports_sent": reports_sent,
+            "reports_accepted": s.counts["reports_ok"],
+            "rate_limited": s.counts["rate_limited"],
+            **dedup,
+            "delivery_avg_ms": rounded(delivery["avg"]),
+            "delivery_median_ms": rounded(delivery["median"]),
+            "delivery_p95_ms": rounded(delivery["p95"]),
+            "deliveries_measured": len(deliveries),
+            "deliveries_unmatched": unmatched,
+            "first_yes_avg_s": rounded(first_yes["avg"], 1),
+            "first_yes_median_s": rounded(first_yes["median"], 1),
+            "incidents_with_yes": len(time_to_first_yes(s.records, s.first_yes)),
+            "witnesses_asked": s.counts["witnesses_asked"],
+            "answers_yes": s.answers["yes"],
+            "answers_no": s.answers["no"],
+            "answers_unsure": s.answers["unsure"],
+            "answers_refused": s.counts["answers_refused"],
+            "http_avg_ms": rounded(http["avg"]),
+            "http_p95_ms": rounded(http["p95"]),
+            "errors": sum(s.errors.values()),
+            "duration_s": round(time.monotonic() - self.started),
+        }
+
+    async def summary(self, r: dict) -> None:
+        def ms(value):
+            return "-" if value is None else f"{value} ms"
+
+        def sec(value):
+            return "-" if value is None else f"{value} s"
 
         print()
-        print("Summary")
-        print("-------")
-        print(f"Run:              sim-{self.run_id}, {time.monotonic() - self.started:.0f} s")
-        print(f"Citizens:         {len(self.citizens)} registered, {c['connected']} connected")
-        print(f"Events planned:   {len(events)}")
+        print(f"Summary of {r['run']} ({r['duration_s']} s)")
+        print("-" * 40)
+        print(f"Citizens:          {r['citizens']} registered, {r['citizens_connected']} connected")
         print(
-            f"Reports:          {c['reports_ok']} accepted, {c['rate_limited']} rate limited, "
-            f"{sum(v for k, v in self.stats.errors.items() if k.startswith('report'))} failed"
+            f"Reports:           {r['reports_accepted']} of {r['reports_sent']} accepted, "
+            f"{r['rate_limited']} rate limited"
         )
         print(
-            f"Incidents:        {c['new_incidents']} new, {c['merged']} reports merged "
-            f"into existing ones, {len(self.stats.incidents)} distinct"
+            f"Duplicates:        {r['events']} real events -> {r['incidents_created']} incidents; "
+            f"{r['correctly_merged']} of {r['expected_duplicates']} duplicates merged correctly"
+            + (f" ({r['dedup_accuracy_pct']}%)" if r["dedup_accuracy_pct"] is not None else "")
         )
-        print(f"Witnesses asked:  {c['witnesses_asked']} (questions received: {c['questions']})")
         print(
-            f"Witness answers:  {answers['yes']} yes, {answers['no']} no, {answers['unsure']} unsure"
+            f"                   {r['wrongly_split']} wrongly split, "
+            f"{r['events_joined']} real events joined to another incident"
         )
-        if c["answers_refused"]:
-            print(
-                f"                  {c['answers_refused']} refused: the witness had also "
-                "reported the incident (counted once)"
-            )
-        if latencies:
-            p95 = latencies[min(int(len(latencies) * 0.95), len(latencies) - 1)]
-            print(
-                f"Report time:      avg {sum(latencies) / len(latencies) * 1000:.0f} ms, "
-                f"p95 {p95 * 1000:.0f} ms"
-            )
+        print(
+            f"To the operator:   avg {ms(r['delivery_avg_ms'])}, median {ms(r['delivery_median_ms'])}, "
+            f"p95 {ms(r['delivery_p95_ms'])} ({r['deliveries_measured']} reports"
+            + (f", {r['deliveries_unmatched']} not matched" if r["deliveries_unmatched"] else "")
+            + ")"
+        )
+        print(
+            f"First witness yes: avg {sec(r['first_yes_avg_s'])}, median "
+            f"{sec(r['first_yes_median_s'])} after the first report "
+            f"({r['incidents_with_yes']} incidents; witnesses wait 1-5 s on purpose)"
+        )
+        print(
+            f"Witness answers:   {r['answers_yes']} yes, {r['answers_no']} no, "
+            f"{r['answers_unsure']} unsure, {r['answers_refused']} refused (also reported)"
+        )
+        print(f"HTTP report time:  avg {ms(r['http_avg_ms'])}, p95 {ms(r['http_p95_ms'])}")
         if self.stats.errors:
-            print("Errors:           " + ", ".join(f"{k} x{v}" for k, v in self.stats.errors.items()))
+            print("Errors:            " + ", ".join(f"{k} x{v}" for k, v in self.stats.errors.items()))
+        print()
 
-        try:
-            response = await self.client.get(
-                "/api/stats", headers={"Authorization": f"Bearer {self.operator_token}"}
-            )
-            response.raise_for_status()
-            stats = response.json()
-            confirm = stats.get("avg_seconds_to_confirmation")
-            print(
-                f"Server (24 h):    {stats['open']} open, {stats['critical']} critical, "
-                f"{stats['confirmed']} confirmed, avg to confirmation "
-                f"{'-' if confirm is None else f'{confirm} s'}"
-            )
-        except (httpx.HTTPError, KeyError) as error:
-            print(f"Server stats not available: {error}")
+
+# ---------- Results ----------
+
+
+def save_csv(results: list[dict], folder: Path, now: datetime) -> Path:
+    """Write one row per run to <folder>/<date-time>.csv and return the path."""
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / f"{now.strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+    with path.open("w", newline="", encoding="utf-8") as file:
+        writer = csv.DictWriter(file, fieldnames=list(results[0]))
+        writer.writeheader()
+        writer.writerows(results)
+    return path
+
+
+def markdown_table(results: list[dict]) -> str:
+    """A table in Bulgarian, ready to paste into the presentation."""
+
+    def ms(value):
+        return "—" if value is None else f"{value} ms"
+
+    header = (
+        "| Граждани | Сигнали | Реални събития | Създадени инциденти | Правилно обединени "
+        "| Грешно разделени | Доставка до оператора (ср. / медиана / p95) "
+        "| До първо „да“ от свидетел (медиана) |"
+    )
+    lines = [header, "|" + "---|" * 8]
+    for r in results:
+        merged = f"{r['correctly_merged']} от {r['expected_duplicates']}"
+        if r["dedup_accuracy_pct"] is not None:
+            merged += f" ({r['dedup_accuracy_pct']:g}%)".replace(".", ",")
+        first_yes = "—" if r["first_yes_median_s"] is None else f"{r['first_yes_median_s']:g} s".replace(".", ",")
+        lines.append(
+            f"| {r['citizens']} | {r['reports_accepted']} | {r['events']} | {r['incidents_created']} "
+            f"| {merged} | {r['wrongly_split']} "
+            f"| {ms(r['delivery_avg_ms'])} / {ms(r['delivery_median_ms'])} / {ms(r['delivery_p95_ms'])} "
+            f"| {first_yes} |"
+        )
+    return "\n".join(lines)
+
+
+# ---------- Command line ----------
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -453,6 +718,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--duration", type=float, default=120, help="seconds to spread the reports over (default 120)"
     )
     parser.add_argument("--seed", type=int, default=None, help="random seed, for a repeatable run")
+    parser.add_argument(
+        "--demo", action="store_true",
+        help="reset the demo data first (POST /api/demo/reset); deletes all incidents",
+    )
+    parser.add_argument(
+        "--sweep", action="store_true",
+        help="run with 10, 50 and 100 citizens one after another, "
+        "keeping the reports per citizen of --reports/--citizens",
+    )
+    parser.add_argument(
+        "--out", type=Path, default=RESULTS_DIR, help="folder for the CSV file (default docs/results)"
+    )
     args = parser.parse_args(argv)
     if args.citizens < 2:
         parser.error("--citizens must be at least 2")
@@ -463,16 +740,51 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return args
 
 
+def run_plans(args: argparse.Namespace) -> list[argparse.Namespace]:
+    """The runs to make: one, or three for --sweep with the same reports per citizen."""
+    if not args.sweep:
+        return [args]
+    per_citizen = args.reports / args.citizens
+    runs = []
+    for index, citizens in enumerate(SWEEP_CITIZENS):
+        run = argparse.Namespace(**vars(args))
+        run.citizens = citizens
+        run.reports = max(round(citizens * per_citizen), 1)
+        run.seed = None if args.seed is None else args.seed + index
+        runs.append(run)
+    return runs
+
+
+async def run_all(args: argparse.Namespace) -> list[dict]:
+    runs = run_plans(args)
+    if args.sweep and not args.demo:
+        print(
+            "Note: without --demo, incidents left open by one run can absorb the reports of "
+            "the next, which lowers the duplicate numbers."
+        )
+    results = []
+    for number, run in enumerate(runs, start=1):
+        if len(runs) > 1:
+            print(f"\n=== Run {number} of {len(runs)}: {run.citizens} citizens, {run.reports} reports ===")
+        results.append(await Simulator(run).run())
+    return results
+
+
 def main() -> None:
     args = parse_args()
     try:
-        asyncio.run(Simulator(args).run())
+        results = asyncio.run(run_all(args))
     except httpx.HTTPStatusError as error:
         raise SystemExit(f"Server error: {error.response.status_code} {error.response.text}")
     except httpx.ConnectError:
         raise SystemExit(f"Cannot connect to {args.url}. Is the server running?")
     except KeyboardInterrupt:
         raise SystemExit("Stopped.")
+
+    path = save_csv(results, args.out, datetime.now())
+    print(f"Results saved to {path}")
+    print()
+    print(markdown_table(results))
 
 
 if __name__ == "__main__":
