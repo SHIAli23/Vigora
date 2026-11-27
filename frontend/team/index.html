@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1b2e">
+  <title>Vigora — Екип</title>
+  <link rel="icon" href="/citizen/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="/shared/vigora.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-app="team">
+
+  <!-- Login -->
+  <main id="login-screen" class="login-page hidden">
+    <div class="login-card">
+      <div class="wordmark">Vig<em>o</em>ra</div>
+      <p class="app-name">Приложение за екипи</p>
+
+      <form id="login-form" novalidate>
+        <div class="field">
+          <label for="username">Потребителско име</label>
+          <input id="username" name="username" autocomplete="username" autocapitalize="none"
+                 spellcheck="false" required>
+        </div>
+        <div class="field">
+          <label for="password">Парола</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
+        </div>
+        <p id="login-error" class="error-text hidden" role="alert"></p>
+        <button type="submit" class="btn btn-primary btn-block">Вход</button>
+      </form>
+
+      <div class="demo-accounts">
+        <p class="hint">Демо екипи</p>
+        <div class="demo-list">
+          <button type="button" data-demo-user="med1" data-demo-pass="team123">Линейка 1</button>
+          <button type="button" data-demo-user="med2" data-demo-pass="team123">Линейка 2</button>
+          <button type="button" data-demo-user="fire1" data-demo-pass="team123">Пожарна 1</button>
+          <button type="button" data-demo-user="fire2" data-demo-pass="team123">Пожарна 2</button>
+          <button type="button" data-demo-user="police1" data-demo-pass="team123">Патрул 1</button>
+          <button type="button" data-demo-user="police2" data-demo-pass="team123">Патрул 2</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Team screen -->
+  <div id="app" class="team-app hidden">
+    <header class="team-header">
+      <div class="team-header-main">
+        <span class="wordmark">Vig<em>o</em>ra</span>
+        <span id="team-name" class="team-name"></span>
+      </div>
+      <div class="team-header-actions">
+        <span id="conn" class="conn offline">Свързване…</span>
+        <button type="button" class="btn btn-quiet btn-small" id="logout">Изход</button>
+      </div>
+    </header>
+
+    <main class="team-main">
+      <div id="loading" class="team-loading" role="status">Зареждане…</div>
+
+      <!-- No active task -->
+      <section id="idle" class="idle hidden" aria-live="polite">
+        <div class="idle-ring" aria-hidden="true"><span>свободен</span></div>
+        <h1>Няма активна задача</h1>
+        <p>Новата задача ще се появи тук веднага, когато операторът на 112 ви изпрати.</p>
+      </section>
+
+      <!-- Active task, drawn by app.js -->
+      <section id="task" class="hidden" aria-live="polite"></section>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="/shared/vigora.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
