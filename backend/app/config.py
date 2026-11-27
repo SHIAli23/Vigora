@@ -1,9 +1,15 @@
 from pathlib import Path
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 PROJECT_DIR = BACKEND_DIR.parent
+
+# Hosting providers such as Render give "postgres://..." or "postgresql://...".
+# SQLAlchemy needs the driver in the URL, and this project uses psycopg 3.
+_POSTGRES_PREFIXES = ("postgres://", "postgresql://")
+_PSYCOPG_PREFIX = "postgresql+psycopg://"
 
 
 class Settings(BaseSettings):
@@ -21,6 +27,15 @@ class Settings(BaseSettings):
     report_limit_minutes: int = 10
     seed_demo_data: bool = True
     frontend_dir: Path = PROJECT_DIR / "frontend"
+
+    @field_validator("database_url")
+    @classmethod
+    def use_psycopg_driver(cls, url: str) -> str:
+        """Turn a provider's postgres:// or postgresql:// URL into postgresql+psycopg://."""
+        for prefix in _POSTGRES_PREFIXES:
+            if url.startswith(prefix):
+                return _PSYCOPG_PREFIX + url[len(prefix):]
+        return url
 
 
 settings = Settings()
