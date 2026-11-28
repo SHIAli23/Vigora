@@ -15,7 +15,7 @@ from app.realtime import manager
 from app.rules import INCIDENT_TYPES, get_type
 from app.services.geo import is_valid_point
 from app.services.incidents import STATUS_LABELS, add_event, iso, submit_report
-from app.services.photos import save_photo
+from app.services.photos import known_hashes, record_photo_check, save_photo
 from app.services.ratelimit import RateLimiter
 from app.services.witnesses import create_requests, find_witnesses
 
@@ -53,7 +53,10 @@ async def send_report(
             status.HTTP_429_TOO_MANY_REQUESTS, "Твърде много сигнали. Опитайте след малко."
         )
 
-    photo_name = await save_photo(photo)
+    saved = await save_photo(photo, lat, lng, now, known_hashes(db))
+    photo_name = saved[0] if saved else None
+    if saved:
+        record_photo_check(db, *saved, now)
     report, incident, is_new = submit_report(
         db, user, type, lat, lng, description, people_affected, photo_name, now
     )

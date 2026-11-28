@@ -25,6 +25,7 @@ from app.models import (
 from app.rules import TEAM_KIND_LABELS, get_type
 from app.services import reputation, urgency
 from app.services.dedup import find_matching_incident
+from app.services.photos import incident_photo_checks, photo_check_view
 
 STATUS_LABELS = {
     STATUS_NEW: "Приет от 112",
@@ -244,7 +245,7 @@ def incident_summary(incident: Incident, now: datetime) -> dict[str, Any]:
 
 
 def incident_detail(incident: Incident, now: datetime) -> dict[str, Any]:
-    """The summary plus the reports, witness photos and history."""
+    """The summary plus the reports, witness photos, photo checks and history."""
     detail = incident_summary(incident, now)
     detail["reports"] = [
         {
@@ -260,6 +261,7 @@ def incident_detail(incident: Incident, now: datetime) -> dict[str, Any]:
     detail["witness_photos"] = [
         request.photo for request in incident.witness_requests if request.photo
     ]
+    detail["photo_checks"] = [photo_check_view(check) for check in incident_photo_checks(incident)]
     detail["events"] = [
         {"text": event.text, "created_at": iso(event.created_at)} for event in incident.events
     ]

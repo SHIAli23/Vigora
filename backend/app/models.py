@@ -117,6 +117,9 @@ class Report(Base):
 
     incident: Mapped["Incident"] = relationship(back_populates="reports")
     user: Mapped["User"] = relationship()
+    photo_check: Mapped["PhotoCheck | None"] = relationship(
+        primaryjoin="foreign(Report.photo) == PhotoCheck.name", viewonly=True
+    )
 
 
 class WitnessRequest(Base):
@@ -136,6 +139,25 @@ class WitnessRequest(Base):
 
     incident: Mapped["Incident"] = relationship(back_populates="witness_requests")
     user: Mapped["User"] = relationship()
+    photo_check: Mapped["PhotoCheck | None"] = relationship(
+        primaryjoin="foreign(WitnessRequest.photo) == PhotoCheck.name", viewonly=True
+    )
+
+
+class PhotoCheck(Base):
+    """What the photo check found for one saved photo (see services/photo_check).
+
+    The photo itself is stored without metadata; only these signals and the hash are kept.
+    """
+
+    __tablename__ = "photo_checks"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), unique=True)  # file name in uploads
+    level: Mapped[str] = mapped_column(String(10))  # ok, check or warning
+    reasons: Mapped[str] = mapped_column(Text, default="[]")  # JSON list of texts
+    phash: Mapped[str] = mapped_column(String(16), default="")  # difference hash, 16 hex digits
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class IncidentEvent(Base):

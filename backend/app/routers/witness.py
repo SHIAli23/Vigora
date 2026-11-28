@@ -13,7 +13,7 @@ from app.deps import require_role
 from app.models import ANSWER_NO, ANSWER_YES, CITIZEN, OPEN_STATUSES, Incident, User, WitnessRequest
 from app.rules import WITNESS_ANSWER_WINDOW_MIN
 from app.services.incidents import add_event
-from app.services.photos import save_photo
+from app.services.photos import known_hashes, record_photo_check, save_photo
 from app.services.witnesses import AnswerError, check_answer, question_view, record_answer
 
 router = APIRouter(prefix="/api/witness", tags=["witness"])
@@ -66,7 +66,14 @@ async def answer_question(
     try:
         # Checked before the photo is saved, so a rejected answer leaves no file behind.
         check_answer(request, user.id, answer, now)
-        photo_name = await save_photo(photo) if answer == ANSWER_YES else None
+        saved = None
+        if answer == ANSWER_YES:
+            # A witness photo should show the incident, so it is compared with the incident's point.
+            incident = request.incident
+            saved = await save_photo(photo, incident.lat, incident.lng, now, known_hashes(db))
+        photo_name = saved[0] if saved else None
+        if saved:
+            record_photo_check(db, *saved, now)
         incident = record_answer(request, user.id, answer, photo_name, now)
     except AnswerError as error:
         raise HTTPException(status.HTTP_409_CONFLICT, str(error)) from error
