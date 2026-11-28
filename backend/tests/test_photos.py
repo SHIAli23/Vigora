@@ -6,6 +6,7 @@ from fastapi import HTTPException, UploadFile
 
 from app.config import settings
 from app.services.photos import detect_extension, save_photo
+from tests.test_photo_check import NOW, POINT, image_bytes
 
 JPEG = b"\xff\xd8\xff\xe0" + b"\x00" * 20
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 20
@@ -32,21 +33,28 @@ def upload(content, filename="photo.jpg"):
     return UploadFile(file=io.BytesIO(content), filename=filename)
 
 
+def save(file):
+    return asyncio.run(save_photo(file, *POINT, NOW))
+
+
 def test_save_photo_without_file():
-    assert asyncio.run(save_photo(None)) is None
+    assert save(None) is None
 
 
 def test_save_photo_saves_with_random_name():
-    name = asyncio.run(save_photo(upload(PNG, filename="../../evil.jpg")))
+    name, result = save(upload(image_bytes("PNG"), filename="../../evil.jpg"))
 
     assert name.endswith(".png")
     assert "evil" not in name
-    assert (settings.upload_dir / name).read_bytes() == PNG
+    assert (settings.upload_dir / name).exists()
+    assert result.level == "check"
 
 
-def test_save_photo_rejects_fake_image():
+@pytest.mark.parametrize("content", [b"not an image at all", PNG, JPEG])
+def test_save_photo_rejects_fake_image(content):
+    # The last two start like real images but cannot be decoded.
     with pytest.raises(HTTPException) as error:
-        asyncio.run(save_photo(upload(b"not an image at all", filename="photo.jpg")))
+        save(upload(content, filename="photo.jpg"))
 
     assert error.value.status_code == 415
 
@@ -55,7 +63,7 @@ def test_save_photo_rejects_too_big():
     too_big = JPEG + b"\x00" * (settings.max_photo_mb * 1024 * 1024)
 
     with pytest.raises(HTTPException) as error:
-        asyncio.run(save_photo(upload(too_big)))
+        save(upload(too_big))
 
     assert error.value.status_code == 413
     assert error.value.detail == f"Снимката е над {settings.max_photo_mb} MB"

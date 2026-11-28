@@ -196,6 +196,7 @@
   var reportSubmit = document.getElementById("report-submit");
   var description = document.getElementById("report-description");
   var photoInput = document.getElementById("report-photo");
+  photoInput.addEventListener("change", function () { showPhotoChosen(photoInput); });
   var peopleValue = document.getElementById("people-value");
   var peopleMinus = document.getElementById("people-minus");
   var peoplePlus = document.getElementById("people-plus");
@@ -288,6 +289,12 @@
     reportSubmit.textContent = value ? "Изпращане…" : "Изпрати сигнала";
   }
 
+  // The file input is hidden behind the "Снимай сега" button, so say when a photo is attached.
+  function showPhotoChosen(input) {
+    var chosen = input.files && input.files.length > 0;
+    document.getElementById(input.id + "-chosen").classList.toggle("hidden", !chosen);
+  }
+
   function openReport(typeKey) {
     var type = Vigora.meta && Vigora.meta.byKey[typeKey];
     if (!type) return;
@@ -300,6 +307,7 @@
     document.getElementById("report-danger").classList.toggle("hidden", !type.life_threatening);
 
     reportForm.reset();
+    showPhotoChosen(photoInput);
     document.getElementById("report-count").textContent = "0";
     setPeople(0);
     setSending(false);
@@ -637,6 +645,7 @@
   var questionError = document.getElementById("question-error");
   var questionTimer = document.getElementById("question-timer");
   var questionPhoto = document.getElementById("question-photo");
+  questionPhoto.addEventListener("change", function () { showPhotoChosen(questionPhoto); });
   var answerButtons = questionSheet.querySelectorAll("[data-answer]");
 
   var queue = []; // questions waiting to be shown, oldest first
@@ -744,6 +753,7 @@
       question.type_label + ", на " + Vigora.formatDistance(question.distance_m) + " от вас";
     document.getElementById("question-text").textContent = question.question;
     questionPhoto.value = "";
+    showPhotoChosen(questionPhoto);
     showQuestionError("");
     setAnswering(false);
 

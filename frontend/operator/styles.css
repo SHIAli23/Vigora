@@ -699,7 +699,30 @@ body[data-app="operator"] {
   gap: 6px;
 }
 
+.photos-note {
+  margin: -4px 0 10px;
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.photo-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.photo-badge {
+  max-width: 100%;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
 .photo {
+  width: 100%;
   aspect-ratio: 1;
   padding: 0;
   overflow: hidden;
@@ -752,15 +775,45 @@ body[data-app="operator"] {
 
 .photo-view[open] {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 14px;
 }
 
 .photo-view img {
   max-width: 100%;
+  min-height: 0;
   max-height: 100%;
   border-radius: 8px;
   object-fit: contain;
+}
+
+/* The check result under the opened photo. */
+.photo-view-info {
+  flex-shrink: 0;
+  width: min(560px, 100%);
+  padding: 12px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--floating-bg);
+  color: var(--ink);
+}
+
+.photo-reasons {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 14px;
+}
+
+.photo-reasons li + li {
+  margin-top: 2px;
+}
+
+.photo-view-note {
+  margin: 8px 0 0;
+  color: var(--ink-faint);
+  font-size: 12px;
 }
 
 .photo-view-close {

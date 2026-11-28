@@ -5,6 +5,8 @@ from datetime import datetime
 
 from app.models import STATUS_NEW, Incident
 from app.rules import get_type
+from app.services.photo_check import LEVEL_WARNING
+from app.services.photos import incident_photo_checks
 
 # Weights. They will be tuned later.
 PER_PERSON = 10
@@ -58,7 +60,13 @@ def calculate(incident: Incident, avg_trust: float, now: datetime) -> Urgency:
         )
 
     if incident.has_photo:
-        parts.append(("Има снимка", PHOTO_BONUS))
+        # A photo counts only if at least one is not suspicious. Photos without a check result
+        # (saved before checks existed) count as not suspicious.
+        checks = incident_photo_checks(incident)
+        if checks and all(check.level == LEVEL_WARNING for check in checks):
+            parts.append(("Снимката е съмнителна", 0))
+        else:
+            parts.append(("Има снимка", PHOTO_BONUS))
 
     # Waiting adds points only until an operator acts on the incident.
     if incident.status == STATUS_NEW and incident.created_at is not None:
