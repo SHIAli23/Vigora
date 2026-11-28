@@ -3,7 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#070708">
+  <meta name="theme-color" content="#070708" data-dark="#070708" data-light="#f4f4f6">
+  <script>
+    /* The theme before the first paint: the saved choice, otherwise the device setting. */
+    (function () {
+      var theme = null;
+      try { theme = localStorage.getItem("vigora.theme"); } catch (e) { /* storage blocked */ }
+      if (theme !== "light" && theme !== "dark") {
+        theme = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+      }
+      document.documentElement.setAttribute("data-theme", theme);
+      var bar = document.querySelector('meta[name="theme-color"]');
+      if (bar) bar.setAttribute("content", bar.getAttribute("data-" + theme));
+    })();
+  </script>
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Vigora">
   <title>Vigora — Граждани</title>
@@ -20,11 +33,15 @@
   <!-- Login and registration -->
   <main id="login-screen" class="login-page hidden">
     <div class="login-card">
+      <button type="button" class="theme-toggle" data-theme-toggle aria-label="Светла тема" title="Светла тема">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
       <div class="radar radar-login" aria-hidden="true">
         <div class="radar-plane"><i></i><i></i><i></i><span class="radar-sweep"></span></div>
         <span class="radar-core"></span>
       </div>
-      <div class="wordmark">Vig<em>o</em>ra</div>
+      <a class="wordmark" href="/" aria-label="Vigora — начална страница">Vig<em>o</em>ra</a>
       <p class="app-name">Граждани</p>
 
       <form id="login-form" novalidate>
@@ -71,8 +88,12 @@
 
     <div class="app-header-wrap">
       <header class="app-header">
-        <span class="wordmark">Vig<em>o</em>ra</span>
+        <a class="wordmark" href="/" aria-label="Vigora — начална страница">Vig<em>o</em>ra</a>
         <span class="header-right">
+          <button type="button" class="theme-toggle" data-theme-toggle aria-label="Светла тема" title="Светла тема">
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
           <span id="conn" class="conn offline">Свързване…</span>
           <button type="button" class="btn btn-quiet" id="logout">Изход</button>
         </span>

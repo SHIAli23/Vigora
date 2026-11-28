@@ -3,11 +3,43 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#070708">
+  <meta name="theme-color" content="#070708" data-dark="#070708" data-light="#f4f4f6">
+  <script>
+    /* The theme before the first paint: the saved choice, otherwise the device setting. */
+    (function () {
+      var theme = null;
+      try { theme = localStorage.getItem("vigora.theme"); } catch (e) { /* storage blocked */ }
+      if (theme !== "light" && theme !== "dark") {
+        theme = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+      }
+      document.documentElement.setAttribute("data-theme", theme);
+      var bar = document.querySelector('meta[name="theme-color"]');
+      if (bar) bar.setAttribute("content", bar.getAttribute("data-" + theme));
+    })();
+  </script>
   <title>Vigora</title>
   <meta name="description" content="Прототип на система за сигнали към 112: граждани, оператор и екипи в реално време.">
   <link rel="stylesheet" href="/shared/vigora.css">
   <style>
+    /* The app mock-up on this page: a dark or a light little map. */
+    :root {
+      --screen-bg: #0c0c0e;
+      --mock-map-bg: #0f0f12;
+      --mock-road: #26262b;
+      --mock-road-main: #34343a;
+      --mock-park: #121a14;
+      --mock-river: #13202e;
+    }
+
+    html[data-theme="light"] {
+      --screen-bg: #ffffff;
+      --mock-map-bg: #f2f2f0;
+      --mock-road: #e0e0e4;
+      --mock-road-main: #d0d0d6;
+      --mock-park: #dcefdc;
+      --mock-river: #c7dcf2;
+    }
+
     .wrap {
       max-width: 1180px;
       margin: 0 auto;
@@ -20,7 +52,7 @@
       top: 0;
       z-index: 50;
       padding: 14px 0;
-      background: linear-gradient(180deg, rgba(7, 7, 8, 0.9), rgba(7, 7, 8, 0.6) 70%, transparent);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--canvas) 90%, transparent), color-mix(in srgb, var(--canvas) 60%, transparent) 70%, transparent);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
     }
@@ -40,7 +72,7 @@
       padding: 4px;
       border: 1px solid var(--line);
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.03);
+      background: color-mix(in srgb, var(--tint-base) 3%, transparent);
     }
     .nav-links a {
       padding: 7px 16px;
@@ -51,8 +83,13 @@
       text-decoration: none;
     }
     .nav-links a:hover {
-      background: rgba(255, 255, 255, 0.06);
+      background: color-mix(in srgb, var(--tint-base) 6%, transparent);
       color: var(--ink);
+    }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
     .nav .btn {
       min-height: 40px;
@@ -134,16 +171,16 @@
       content: "";
       position: absolute;
       inset: 10% 0 0 15%;
-      background: radial-gradient(closest-side, rgba(255, 107, 26, 0.22), transparent);
+      background: radial-gradient(closest-side, color-mix(in srgb, var(--orange) 22%, transparent), transparent);
       filter: blur(20px);
     }
     .screen {
       position: relative;
       border: 1px solid var(--line-strong);
       border-radius: 18px;
-      background: #0c0c0e;
-      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 50px 100px -20px rgba(0, 0, 0, 0.9),
-        0 30px 60px -30px rgba(255, 107, 26, 0.25);
+      background: var(--screen-bg);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 50px 100px -20px var(--shadow-deep),
+        0 30px 60px -30px color-mix(in srgb, var(--orange) 25%, transparent);
       transform: rotateY(-16deg) rotateX(7deg) rotateZ(1deg);
       transform-origin: 30% 50%;
       transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -196,7 +233,7 @@
     .mock-map {
       position: relative;
       border-right: 1px solid var(--line);
-      background: #0f0f12;
+      background: var(--mock-map-bg);
       overflow: hidden;
     }
     .mock-map svg {
@@ -205,22 +242,22 @@
       width: 100%;
       height: 100%;
     }
-    .mock-map .road { stroke: #26262b; fill: none; }
-    .mock-map .road.main { stroke: #34343a; stroke-width: 6; }
+    .mock-map .road { stroke: var(--mock-road); fill: none; }
+    .mock-map .road.main { stroke: var(--mock-road-main); stroke-width: 6; }
     .mock-map .road.side { stroke-width: 3; }
-    .mock-map .park { fill: #121a14; }
-    .mock-map .river { stroke: #13202e; stroke-width: 10; fill: none; }
+    .mock-map .park { fill: var(--mock-park); }
+    .mock-map .river { stroke: var(--mock-river); stroke-width: 10; fill: none; }
     .pin {
       position: absolute;
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      border: 2px solid #fff;
+      border: 2px solid var(--marker-ring);
       transform: translate(-50%, -50%);
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 2px 6px var(--shadow-color);
     }
     .pin.critical {
-      box-shadow: 0 0 0 6px rgba(240, 68, 56, 0.25), 0 2px 6px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--red) 25%, transparent), 0 2px 6px var(--shadow-color);
     }
     .unit {
       position: absolute;
@@ -228,7 +265,7 @@
       height: 14px;
       border-radius: 4px;
       border: 2px solid var(--orange);
-      background: #0b0b0c;
+      background: var(--marker-bg);
       transform: translate(-50%, -50%);
     }
     .route {
@@ -258,8 +295,8 @@
       font-size: 12px;
     }
     .row.active {
-      border-color: rgba(255, 107, 26, 0.5);
-      background: linear-gradient(180deg, rgba(255, 107, 26, 0.08), rgba(255, 107, 26, 0.02));
+      border-color: color-mix(in srgb, var(--orange) 50%, transparent);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--orange) 8%, transparent), color-mix(in srgb, var(--orange) 2%, transparent));
     }
     .row-top {
       display: flex;
@@ -282,15 +319,15 @@
       font-weight: 600;
       white-space: nowrap;
     }
-    .tag.red { background: var(--red-soft); color: #ff7a70; }
-    .tag.amber { background: var(--amber-soft); color: var(--amber); }
-    .tag.grey { background: rgba(255, 255, 255, 0.06); color: var(--ink-soft); }
+    .tag.red { background: var(--red-soft); color: var(--red-text); }
+    .tag.amber { background: var(--amber-soft); color: var(--amber-text); }
+    .tag.grey { background: color-mix(in srgb, var(--tint-base) 6%, transparent); color: var(--ink-soft); }
     .assign {
       margin-top: 10px;
       padding: 7px;
       border-radius: 999px;
       background: var(--orange);
-      color: #120600;
+      color: var(--on-orange);
       text-align: center;
       font-weight: 600;
     }
@@ -301,10 +338,10 @@
       padding: 12px 14px;
       border: 1px solid var(--line-strong);
       border-radius: 14px;
-      background: rgba(20, 20, 23, 0.92);
+      background: var(--floating-bg);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.8);
+      box-shadow: 0 24px 48px -12px var(--shadow-deep);
       font-size: 12px;
       animation: drift 7s ease-in-out infinite;
     }
@@ -338,7 +375,7 @@
       animation-delay: -3.5s;
     }
     .float-eta b {
-      color: var(--orange-bright);
+      color: var(--orange-text);
     }
     @keyframes drift {
       0%, 100% { transform: translateY(0); }
@@ -415,7 +452,7 @@
       transition: border-color 0.2s, transform 0.2s;
     }
     .app:hover {
-      border-color: rgba(255, 107, 26, 0.5);
+      border-color: color-mix(in srgb, var(--orange) 50%, transparent);
       transform: translateY(-3px);
     }
     .app-top {
@@ -458,7 +495,7 @@
       padding: 4px 10px;
       border: 1px solid var(--line);
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.03);
+      background: color-mix(in srgb, var(--tint-base) 3%, transparent);
       color: var(--ink-soft);
       font-size: 12px;
     }
@@ -474,9 +511,9 @@
       gap: 14px;
       padding: 16px 20px;
       margin-bottom: 28px;
-      border: 1px solid rgba(240, 68, 56, 0.25);
+      border: 1px solid color-mix(in srgb, var(--red) 25%, transparent);
       border-radius: var(--radius-lg);
-      background: rgba(240, 68, 56, 0.06);
+      background: color-mix(in srgb, var(--red) 6%, transparent);
       color: var(--ink-soft);
       font-size: 15px;
     }
@@ -486,8 +523,8 @@
       margin-left: auto;
       padding: 6px 14px;
       border-radius: 999px;
-      background: var(--red);
-      color: #fff;
+      background: var(--emergency);
+      color: var(--on-emergency);
       font-weight: 700;
       text-decoration: none;
     }
@@ -548,7 +585,13 @@
         <a href="/team/">Екипи</a>
         <a href="/docs">API</a>
       </nav>
-      <a class="btn btn-primary" href="/citizen/">Подай сигнал</a>
+      <div class="nav-actions">
+        <button type="button" class="theme-toggle" data-theme-toggle aria-label="Светла тема" title="Светла тема">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <a class="btn btn-primary" href="/citizen/">Подай сигнал</a>
+      </div>
     </div>
   </header>
 
@@ -720,5 +763,6 @@
       </div>
     </div>
   </footer>
+  <script src="/shared/vigora.js"></script>
 </body>
 </html>
