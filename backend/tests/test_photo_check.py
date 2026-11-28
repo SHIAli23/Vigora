@@ -251,6 +251,7 @@ def test_report_photo_check_in_detail_and_urgency(client):
     [photo_check] = detail["photo_checks"]
     assert photo_check["name"] == detail["reports"][0]["photo"]
     assert photo_check["level"] == "ok"
+    assert detail["photo_warning"] is False
     assert {"label": "Има снимка", "points": 5} in detail["urgency_breakdown"]
 
 
@@ -261,6 +262,7 @@ def test_only_suspicious_photos_give_no_points(client):
 
     detail = incident_detail(client, sent["incident_id"])
     assert detail["photo_checks"][0]["level"] == "warning"
+    assert detail["photo_warning"] is True
     labels = [part["label"] for part in detail["urgency_breakdown"]]
     assert "Има снимка" not in labels
     assert {"label": "Снимката е съмнителна", "points": 0} in detail["urgency_breakdown"]
@@ -295,3 +297,19 @@ def test_witness_photo_is_compared_with_the_incident_point(client):
     [photo_check] = incident_detail(client, incident_id)["photo_checks"]
     assert photo_check["level"] == "warning"
     assert "Снимката е направена на 132 км от сигнала" in photo_check["reasons"]
+
+
+def test_queue_marks_incident_with_a_suspicious_photo(client):
+    bad = ("photo.png", png_with_prompt(), "image/png")
+    first = send_report(client, login(client, "citizen1"), photo=bad).json()
+    # Even with a good photo next to it, one warning is enough to show the mark.
+    send_report(client, login(client, "citizen2"), photo=("a.jpg", image_bytes(), "image/jpeg"))
+    other = send_report(
+        client, login(client, "citizen3"), "fire", photo=("b.jpg", image_bytes(), "image/jpeg")
+    ).json()
+
+    queue = client.get("/api/incidents", headers=auth(login(client, "operator"))).json()
+    marks = {incident["id"]: incident["photo_warning"] for incident in queue}
+
+    assert marks[first["incident_id"]] is True
+    assert marks[other["incident_id"]] is False

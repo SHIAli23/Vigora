@@ -25,6 +25,7 @@ from app.models import (
 from app.rules import TEAM_KIND_LABELS, get_type
 from app.services import reputation, urgency
 from app.services.dedup import find_matching_incident
+from app.services.photo_check import LEVEL_WARNING
 from app.services.photos import incident_photo_checks, photo_check_view
 
 STATUS_LABELS = {
@@ -227,6 +228,10 @@ def incident_summary(incident: Incident, now: datetime) -> dict[str, Any]:
         "lng": incident.lng,
         "people_affected": incident.people_affected,
         "has_photo": incident.has_photo,
+        # True when any photo has a warning, for the "suspicious photo" mark in the queue.
+        "photo_warning": any(
+            check.level == LEVEL_WARNING for check in incident_photo_checks(incident)
+        ),
         "reports_count": incident.reports_count,
         "witness_yes": incident.witness_yes,
         "witness_no": incident.witness_no,

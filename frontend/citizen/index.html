@@ -202,9 +202,15 @@
       </div>
 
       <div class="field">
-        <label for="report-photo">Снимка <span class="hint">— по желание, само от безопасно място</span></label>
+        <span class="field-label">Снимка <span class="hint">— по желание, само от безопасно място</span></span>
         <input id="report-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp"
-               capture="environment" class="file-input">
+               capture="environment" class="photo-input">
+        <label for="report-photo" class="btn photo-take">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+          Снимай сега
+        </label>
+        <p id="report-photo-chosen" class="photo-chosen hidden" aria-live="polite">Снимката е добавена</p>
+        <p class="hint photo-tip">Снимка от мястото помага на 112 повече от изтеглена</p>
       </div>
 
       <p id="report-error" class="error-text hidden" role="alert"></p>
@@ -247,9 +253,15 @@
       <div id="question-map" class="question-map" aria-hidden="true"></div>
 
       <div class="field">
-        <label for="question-photo">Снимка <span class="hint">— по желание, само при „Да“ и само от безопасно място</span></label>
+        <span class="field-label">Снимка <span class="hint">— по желание, само при „Да“ и само от безопасно място</span></span>
         <input id="question-photo" type="file" accept="image/jpeg,image/png,image/webp"
-               capture="environment" class="file-input">
+               capture="environment" class="photo-input">
+        <label for="question-photo" class="btn photo-take">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+          Снимай сега
+        </label>
+        <p id="question-photo-chosen" class="photo-chosen hidden" aria-live="polite">Снимката е добавена</p>
+        <p class="hint photo-tip">Снимка от мястото помага на 112 повече от изтеглена</p>
       </div>
 
       <p id="question-error" class="error-text hidden" role="alert"></p>

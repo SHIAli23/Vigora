@@ -115,6 +115,7 @@
       pills.push('<span class="pill pill-red">Отхвърлен от ' + Vigora.escapeHtml(Vigora.people(incident.witness_no)) + "</span>");
     }
     if (incident.has_photo) pills.push('<span class="pill">Снимка</span>');
+    if (incident.photo_warning) pills.push('<span class="pill pill-red">Съмнителна снимка</span>');
     if (incident.assigned_team) {
       pills.push('<span class="pill pill-blue">' + Vigora.escapeHtml(incident.status_label) + "</span>");
     }
@@ -362,18 +363,56 @@
     return names.concat(d.witness_photos || []);
   }
 
+  // What the photo check found, by level. Signals for the operator, never a verdict.
+  var PHOTO_LEVELS = {
+    ok: { text: "Изглежда истинска", pill: "pill-green" },
+    check: { text: "Провери", pill: "pill-amber" },
+    warning: { text: "Внимание", pill: "pill-red" },
+  };
+
+  // Photo name -> {level, reasons}. Photos saved before checks existed have none.
+  function photoChecks(d) {
+    var checks = new Map();
+    (d.photo_checks || []).forEach(function (c) { checks.set(c.name, c); });
+    return checks;
+  }
+
+  function photoBadgeHtml(check) {
+    var level = check && PHOTO_LEVELS[check.level];
+    if (!level) return "";
+    return '<span class="pill ' + level.pill + ' photo-badge">' + Vigora.escapeHtml(level.text) + "</span>";
+  }
+
+  function photoReasonsHtml(check) {
+    if (!check || !check.reasons.length) return "";
+    return '<ul class="photo-reasons">' + check.reasons.map(function (reason) {
+      return "<li>" + Vigora.escapeHtml(reason) + "</li>";
+    }).join("") + "</ul>";
+  }
+
   function photosHtml(d) {
     var names = photoNames(d);
     if (!names.length) return "";
+    var checks = photoChecks(d);
     var items = names.map(function (name) {
       var url = photoUrls.get(name);
+      var check = checks.get(name);
+      var level = check && PHOTO_LEVELS[check.level];
       return (
-        '<button type="button" class="photo" data-action="photo" data-name="' + Vigora.escapeHtml(name) + '" aria-label="Отвори снимката">' +
+        '<div class="photo-item">' +
+        '<button type="button" class="photo" data-action="photo" data-name="' + Vigora.escapeHtml(name) + '"' +
+        ' aria-label="' + Vigora.escapeHtml("Отвори снимката" + (level ? " (" + level.text + ")" : "")) + '">' +
         (url ? '<img src="' + url + '" alt="">' : '<span class="photo-loading"></span>') +
-        "</button>"
+        "</button>" +
+        photoBadgeHtml(check) +
+        "</div>"
       );
     });
-    return '<section class="detail-section"><h3>Снимки</h3><div class="photos">' + items.join("") + "</div></section>";
+    return (
+      '<section class="detail-section"><h3>Снимки</h3>' +
+      '<p class="photos-note">Проверката показва сигнали, не присъда.</p>' +
+      '<div class="photos">' + items.join("") + "</div></section>"
+    );
   }
 
   function actionsHtml() {
@@ -484,7 +523,14 @@
     } else if (action === "photo") {
       var url = photoUrls.get(button.dataset.name);
       if (!url) return;
+      var check = photoChecks(detail).get(button.dataset.name);
       document.getElementById("photo-view-img").src = url;
+      // The reasons are shown with the opened photo, where there is room to read them.
+      var info = document.getElementById("photo-view-info");
+      info.innerHTML = check
+        ? photoBadgeHtml(check) + photoReasonsHtml(check) + '<p class="photo-view-note">Проверката показва сигнали, не присъда.</p>'
+        : "";
+      info.hidden = !check;
       photoView.showModal();
     }
   });

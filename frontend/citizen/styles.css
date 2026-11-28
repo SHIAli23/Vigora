@@ -1226,27 +1226,41 @@ body[data-app="citizen"]::after {
   font-weight: 700;
 }
 
-.file-input {
-  min-height: 44px;
-  padding: 8px;
-  border: 1px dashed var(--line-strong);
-  border-radius: var(--radius);
-  background: var(--sunken);
-  color: var(--ink-soft);
-  font: inherit;
-  font-size: 14px;
+/* Photo: the file input is hidden behind a "Снимай сега" button that opens the camera. */
+.photo-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
 }
 
-.file-input::file-selector-button {
-  margin-right: 10px;
-  padding: 8px 14px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  background: var(--surface-3);
+.field .photo-take {
+  align-self: flex-start;
   color: var(--ink);
-  font: inherit;
+  font-size: 15px;
+}
+
+/* The hidden input keeps the keyboard focus, so the button shows it. */
+.photo-input:focus-visible + .photo-take {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+
+.photo-chosen {
+  margin: 0;
+  color: var(--green-text);
+  font-size: 14px;
   font-weight: 600;
-  cursor: pointer;
+}
+
+.photo-tip {
+  margin: 0;
+  font-size: 13px;
+}
+
+.field-label .hint {
+  font-weight: 400;
 }
 
 #report-error {
