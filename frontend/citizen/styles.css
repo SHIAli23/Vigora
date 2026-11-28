@@ -19,12 +19,12 @@
   padding: 8px 16px;
   padding-top: max(8px, env(safe-area-inset-top));
   overflow: hidden;
-  background: linear-gradient(90deg, #d92d20, #f04438 50%, #d92d20);
-  color: #fff;
+  background: linear-gradient(90deg, var(--emergency-deep), var(--emergency) 50%, var(--emergency-deep));
+  color: var(--on-emergency);
   font-weight: 600;
   font-size: 15px;
   text-decoration: none;
-  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25), 0 8px 24px -12px rgba(240, 68, 56, 0.8);
+  box-shadow: inset 0 -1px 0 var(--shadow-soft), 0 8px 24px -12px color-mix(in srgb, var(--emergency) 80%, transparent);
 }
 
 /* A slow light that passes over the bar. */
@@ -41,7 +41,7 @@
 }
 
 .call-bar:hover {
-  background: #e2392d;
+  background: color-mix(in srgb, var(--emergency) 50%, var(--emergency-deep));
 }
 
 @keyframes shine {
@@ -53,8 +53,8 @@
   flex: none;
   padding: 1px 12px;
   border-radius: 999px;
-  background: #fff;
-  color: var(--red);
+  background: var(--on-emergency);
+  color: var(--emergency-deep);
   font-weight: 700;
   font-size: 16px;
 }
@@ -63,7 +63,7 @@
 
 .app-header-wrap {
   border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(18, 18, 20, 0.85), rgba(10, 10, 12, 0.55));
+  background: linear-gradient(180deg, var(--header-bg), var(--header-bg-end));
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
 }
@@ -89,10 +89,10 @@
   min-width: 30px;
   height: 22px;
   padding: 0 7px;
-  border: 1px solid rgba(255, 107, 26, 0.35);
+  border: 1px solid var(--orange-line);
   border-radius: 999px;
   background: var(--orange-soft);
-  color: var(--orange-bright);
+  color: var(--orange-text);
   font-family: var(--font-display);
   font-size: 10px;
   letter-spacing: 0.04em;
@@ -160,8 +160,8 @@ body[data-app="citizen"]::after {
 body[data-app="citizen"]::before {
   inset: -20%;
   background:
-    radial-gradient(28% 24% at 82% 12%, rgba(255, 107, 26, 0.2), transparent 70%),
-    radial-gradient(26% 22% at 10% 42%, rgba(46, 211, 183, 0.11), transparent 70%),
+    radial-gradient(28% 24% at 82% 12%, color-mix(in srgb, var(--orange) 20%, transparent), transparent 70%),
+    radial-gradient(26% 22% at 10% 42%, color-mix(in srgb, var(--teal) 11%, transparent), transparent 70%),
     radial-gradient(30% 26% at 70% 78%, rgba(139, 92, 246, 0.1), transparent 70%);
   filter: blur(20px);
   animation: aurora 22s ease-in-out infinite alternate;
@@ -169,7 +169,7 @@ body[data-app="citizen"]::before {
 
 body[data-app="citizen"]::after {
   inset: 0;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-image: radial-gradient(color-mix(in srgb, var(--tint-base) 7%, transparent) 1px, transparent 1px);
   background-size: 22px 22px;
   -webkit-mask-image: linear-gradient(180deg, #000, transparent 55%);
   mask-image: linear-gradient(180deg, #000, transparent 55%);
@@ -199,11 +199,11 @@ body[data-app="citizen"]::after {
   width: 160px;
   height: 160px;
   margin: -80px 0 0 -80px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid color-mix(in srgb, var(--tint-base) 8%, transparent);
   border-radius: 50%;
   background:
     radial-gradient(circle, color-mix(in srgb, var(--radar) 22%, transparent), transparent 62%),
-    repeating-radial-gradient(circle, transparent 0 19px, rgba(255, 255, 255, 0.05) 19px 20px);
+    repeating-radial-gradient(circle, transparent 0 19px, color-mix(in srgb, var(--tint-base) 5%, transparent) 19px 20px);
   transform: rotateX(64deg);
 }
 
@@ -236,11 +236,11 @@ body[data-app="citizen"]::after {
   height: 18px;
   margin: -20px 0 0 -9px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #ff9a90, #f04438 55%, #9e1a12);
+  background: radial-gradient(circle at 35% 30%, var(--emergency-light), var(--emergency) 55%, var(--emergency-dark));
   box-shadow:
-    0 0 0 5px rgba(240, 68, 56, 0.16),
-    0 0 26px 6px rgba(240, 68, 56, 0.5),
-    0 14px 10px -6px rgba(0, 0, 0, 0.9);
+    0 0 0 5px color-mix(in srgb, var(--emergency) 16%, transparent),
+    0 0 26px 6px color-mix(in srgb, var(--emergency) 50%, transparent),
+    0 14px 10px -6px var(--shadow-deep);
   animation: bob 3.6s ease-in-out infinite;
 }
 
@@ -322,10 +322,10 @@ body[data-app="citizen"]::after {
   /* A gradient border, orange to teal, drawn with two backgrounds. */
   border: 1px solid transparent;
   background:
-    linear-gradient(160deg, #18181b, #0e0e10) padding-box,
-    linear-gradient(130deg, rgba(255, 107, 26, 0.7), rgba(255, 255, 255, 0.08) 45%, rgba(46, 211, 183, 0.7)) border-box;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 30px 50px -24px rgba(0, 0, 0, 0.9),
-    0 20px 40px -30px rgba(46, 211, 183, 0.5);
+    linear-gradient(160deg, var(--card-top), var(--card-bottom)) padding-box,
+    linear-gradient(130deg, color-mix(in srgb, var(--orange) 70%, transparent), color-mix(in srgb, var(--tint-base) 8%, transparent) 45%, color-mix(in srgb, var(--teal) 70%, transparent)) border-box;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 30px 50px -24px var(--shadow-deep),
+    0 20px 40px -30px color-mix(in srgb, var(--teal) 50%, transparent);
   animation: card-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 
@@ -380,10 +380,10 @@ body[data-app="citizen"]::after {
   width: 48px;
   height: 48px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(160deg, #2a2a2f, #141417);
+  border: 1px solid color-mix(in srgb, var(--tint-base) 10%, transparent);
+  background: linear-gradient(160deg, var(--surface-3), var(--surface));
   color: var(--ink-soft);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset, 0 10px 18px -8px rgba(0, 0, 0, 0.9);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset, 0 10px 18px -8px var(--shadow-deep);
   transition: color 0.3s, background 0.3s, border-color 0.3s;
 }
 
@@ -399,7 +399,7 @@ body[data-app="citizen"]::after {
   width: 11px;
   height: 11px;
   border-radius: 50%;
-  border: 2px solid #121214;
+  border: 2px solid var(--surface);
   background: var(--ink-faint);
 }
 
@@ -432,23 +432,23 @@ body[data-app="citizen"]::after {
   padding: 4px 11px;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in srgb, var(--tint-base) 4%, transparent);
   color: var(--ink-soft);
   font-size: 12px;
   font-weight: 500;
 }
 
 .status-chip-live {
-  border-color: rgba(255, 107, 26, 0.35);
+  border-color: var(--orange-line);
   background: var(--orange-soft);
-  color: var(--orange-bright);
+  color: var(--orange-text);
 }
 
 /* Location found: teal. */
 .status-card[data-state="found"] .status-icon {
-  border-color: rgba(46, 211, 183, 0.45);
-  background: linear-gradient(160deg, rgba(46, 211, 183, 0.28), rgba(46, 211, 183, 0.06));
-  color: var(--teal-bright);
+  border-color: color-mix(in srgb, var(--teal) 45%, transparent);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--teal) 28%, transparent), color-mix(in srgb, var(--teal) 6%, transparent));
+  color: var(--teal-text);
 }
 
 .status-card[data-state="found"] .ping {
@@ -457,9 +457,9 @@ body[data-app="citizen"]::after {
 }
 
 .status-card[data-state="found"] #loc-chip {
-  border-color: rgba(46, 211, 183, 0.35);
+  border-color: color-mix(in srgb, var(--teal) 35%, transparent);
   background: var(--teal-soft);
-  color: var(--teal-bright);
+  color: var(--teal-text);
 }
 
 /* Still looking: the dot blinks. */
@@ -474,14 +474,14 @@ body[data-app="citizen"]::after {
 }
 
 .status-card[data-state="off"] #loc-chip {
-  border-color: rgba(253, 176, 34, 0.3);
+  border-color: color-mix(in srgb, var(--amber) 30%, transparent);
   background: var(--amber-soft);
-  color: var(--amber);
+  color: var(--amber-text);
 }
 
 @keyframes ping {
-  0% { box-shadow: 0 0 0 0 rgba(46, 211, 183, 0.6); }
-  100% { box-shadow: 0 0 0 10px rgba(46, 211, 183, 0); }
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--teal) 60%, transparent); }
+  100% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--teal) 0%, transparent); }
 }
 
 @keyframes blink {
@@ -520,11 +520,11 @@ body[data-app="citizen"]::after {
   gap: 28px;
   min-height: 138px;
   padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid color-mix(in srgb, var(--tint-base) 7%, transparent);
   border-radius: 20px;
   background:
     radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--type-color) 14%, transparent), transparent 55%),
-    linear-gradient(170deg, #1b1b1f, #111113);
+    linear-gradient(170deg, var(--card-top), var(--card-bottom));
   color: var(--ink);
   font: inherit;
   font-size: 16px;
@@ -537,12 +537,12 @@ body[data-app="citizen"]::after {
   /* The stacked shadows draw the thick edge of the key. */
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.07) inset,
-    0 1px 0 #242428,
-    0 2px 0 #1f1f23,
-    0 3px 0 #1a1a1d,
-    0 4px 0 #161619,
-    0 5px 0 #121215,
-    0 16px 24px -8px rgba(0, 0, 0, 0.85);
+    0 1px 0 var(--extrude-1),
+    0 2px 0 var(--extrude-2),
+    0 3px 0 var(--extrude-3),
+    0 4px 0 var(--extrude-4),
+    0 5px 0 var(--extrude-5),
+    0 16px 24px -8px var(--shadow-deep);
   transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, border-color 0.2s;
   animation: tile-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
@@ -565,14 +565,14 @@ body[data-app="citizen"]::after {
   border-color: color-mix(in srgb, var(--type-color) 55%, transparent);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.09) inset,
-    0 1px 0 #242428,
-    0 2px 0 #1f1f23,
-    0 3px 0 #1a1a1d,
-    0 4px 0 #161619,
-    0 5px 0 #121215,
-    0 6px 0 #0f0f11,
-    0 8px 0 #0c0c0e,
-    0 26px 36px -12px rgba(0, 0, 0, 0.9),
+    0 1px 0 var(--extrude-1),
+    0 2px 0 var(--extrude-2),
+    0 3px 0 var(--extrude-3),
+    0 4px 0 var(--extrude-4),
+    0 5px 0 var(--extrude-5),
+    0 6px 0 var(--extrude-6),
+    0 8px 0 var(--extrude-7),
+    0 26px 36px -12px var(--shadow-deep),
     0 22px 40px -24px var(--type-color);
 }
 
@@ -585,8 +585,8 @@ body[data-app="citizen"]::after {
   --lift: 4px;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.05) inset,
-    0 1px 0 #1a1a1d,
-    0 6px 12px -6px rgba(0, 0, 0, 0.8);
+    0 1px 0 var(--extrude-3),
+    0 6px 12px -6px var(--shadow-deep);
   transition-duration: 0.06s;
 }
 
@@ -619,7 +619,7 @@ body[data-app="citizen"]::after {
   background: linear-gradient(160deg,
     color-mix(in srgb, var(--type-color) 34%, transparent),
     color-mix(in srgb, var(--type-color) 8%, transparent));
-  color: color-mix(in srgb, var(--type-color) 45%, white);
+  color: color-mix(in srgb, var(--type-color) var(--icon-tone-amount), var(--icon-tone));
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.18) inset,
     0 10px 18px -8px color-mix(in srgb, var(--type-color) 80%, black);
@@ -649,7 +649,7 @@ body[data-app="citizen"]::after {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: #ff7a70;
+  color: var(--red-text);
   font-size: 12px;
   font-weight: 600;
   transform: translateZ(20px);
@@ -680,18 +680,18 @@ body[data-app="citizen"]::after {
 
 .witness-card {
   padding: 18px;
-  border: 1px solid rgba(91, 155, 255, 0.3);
+  border: 1px solid color-mix(in srgb, var(--blue) 30%, transparent);
   border-radius: 20px;
   background:
-    radial-gradient(120% 100% at 0% 0%, rgba(91, 155, 255, 0.16), transparent 60%),
-    linear-gradient(170deg, #151a24, #101217);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 16px 30px -18px rgba(0, 0, 0, 0.9);
+    radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, var(--blue) 16%, transparent), transparent 60%),
+    linear-gradient(170deg, color-mix(in srgb, var(--blue) 6%, var(--card-top)), var(--card-bottom));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 16px 30px -18px var(--shadow-deep);
   transition: border-color 0.3s, box-shadow 0.3s;
 }
 
 .witness-card.on {
-  border-color: rgba(91, 155, 255, 0.6);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 16px 30px -18px rgba(0, 0, 0, 0.9),
+  border-color: color-mix(in srgb, var(--blue) 60%, transparent);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 16px 30px -18px var(--shadow-deep),
     0 18px 40px -26px var(--blue);
 }
 
@@ -708,10 +708,10 @@ body[data-app="citizen"]::after {
   justify-content: center;
   width: 40px;
   height: 40px;
-  border: 1px solid rgba(91, 155, 255, 0.4);
+  border: 1px solid color-mix(in srgb, var(--blue) 40%, transparent);
   border-radius: 12px;
-  background: linear-gradient(160deg, rgba(91, 155, 255, 0.3), rgba(91, 155, 255, 0.06));
-  color: #a8c8ff;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--blue) 30%, transparent), color-mix(in srgb, var(--blue) 6%, transparent));
+  color: var(--blue-text);
 }
 
 .witness-icon svg {
@@ -750,7 +750,7 @@ body[data-app="citizen"]::after {
 }
 
 .witness-loc b.set {
-  color: #a8c8ff;
+  color: var(--blue-text);
 }
 
 .btn-small {
@@ -769,8 +769,8 @@ body[data-app="citizen"]::after {
   padding: 0;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
-  background: #0b0b0d;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+  background: var(--well);
+  box-shadow: inset 0 2px 4px var(--shadow-color);
   cursor: pointer;
   transition: background-color 0.2s, border-color 0.2s;
 }
@@ -782,8 +782,8 @@ body[data-app="citizen"]::after {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: linear-gradient(180deg, #f4f4f5, #b9b9c0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+  background: linear-gradient(180deg, #fff, #c9c9d0);
+  box-shadow: 0 2px 4px var(--shadow-color);
   transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -865,13 +865,13 @@ body[data-app="citizen"]::after {
 .btn-yes {
   border-color: var(--green);
   background: var(--green);
-  color: #03140a;
+  color: var(--on-green);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 8px 24px -12px var(--green);
 }
 
 .btn-yes:hover {
-  border-color: #5fe09a;
-  background: #5fe09a;
+  border-color: var(--green-hover);
+  background: var(--green-hover);
 }
 
 .question-timer {
@@ -882,7 +882,7 @@ body[data-app="citizen"]::after {
 }
 
 .question-timer.soon {
-  color: var(--amber);
+  color: var(--amber-text);
 }
 
 /* ---------- My reports ---------- */
@@ -920,8 +920,8 @@ body[data-app="citizen"]::after {
   padding: 14px 16px 14px 20px;
   border: 1px solid var(--line);
   border-radius: 16px;
-  background: linear-gradient(170deg, #18181b, #111113);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 10px 20px -12px rgba(0, 0, 0, 0.8);
+  background: linear-gradient(170deg, var(--card-top), var(--card-bottom));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 10px 20px -12px var(--shadow-deep);
   transition: transform 0.2s ease-out, border-color 0.2s, box-shadow 0.2s;
   animation: report-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
@@ -929,7 +929,7 @@ body[data-app="citizen"]::after {
 .report-item:hover {
   transform: translateY(-2px);
   border-color: var(--line-strong);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07) inset, 0 18px 30px -16px rgba(0, 0, 0, 0.9);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07) inset, 0 18px 30px -16px var(--shadow-deep);
 }
 
 /* Sent, assigned, accepted, on the way, resolved: five segments that fill up. */
@@ -943,7 +943,7 @@ body[data-app="citizen"]::after {
 .report-track i {
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--tint-base) 8%, transparent);
 }
 
 .report-track i.done {
@@ -952,7 +952,7 @@ body[data-app="citizen"]::after {
 
 /* The current step glows and has a light running over it. */
 .report-track i.current {
-  background: linear-gradient(90deg, var(--orange) 0%, #ffd0b0 50%, var(--orange) 100%);
+  background: linear-gradient(90deg, var(--orange) 0%, color-mix(in srgb, var(--orange) 30%, white) 50%, var(--orange) 100%);
   background-size: 200% 100%;
   box-shadow: 0 0 10px var(--orange-glow);
   animation: track-run 1.6s linear infinite;
@@ -960,7 +960,7 @@ body[data-app="citizen"]::after {
 
 .report-track i.done:last-child {
   background: var(--green);
-  box-shadow: 0 0 10px rgba(60, 207, 122, 0.5);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--green) 50%, transparent);
 }
 
 .report-track.stopped i:first-child {
@@ -1056,7 +1056,7 @@ body[data-app="citizen"]::after {
   border-radius: 22px 22px 0 0;
   background: var(--surface);
   color: var(--ink);
-  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 -20px 60px var(--shadow-color);
   overflow: hidden auto;
   overscroll-behavior: contain;
 }
@@ -1067,7 +1067,7 @@ body[data-app="citizen"]::after {
 }
 
 .sheet::backdrop {
-  background: rgba(0, 0, 0, 0.65);
+  background: var(--backdrop);
   backdrop-filter: blur(4px);
 }
 
@@ -1098,7 +1098,7 @@ body[data-app="citizen"]::after {
     margin: auto;
     border-bottom: 1px solid var(--line-strong);
     border-radius: 22px;
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+    box-shadow: 0 30px 80px var(--shadow-deep);
   }
 
   .sheet::before {
@@ -1141,7 +1141,7 @@ body[data-app="citizen"]::after {
   height: 44px;
   border: 1px solid var(--line);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
+  background: color-mix(in srgb, var(--tint-base) 5%, transparent);
   color: var(--ink-soft);
   cursor: pointer;
 }
@@ -1155,16 +1155,16 @@ body[data-app="citizen"]::after {
   display: block;
   margin: 0 0 14px;
   padding: 10px 14px;
-  border: 1px solid rgba(240, 68, 56, 0.4);
+  border: 1px solid color-mix(in srgb, var(--red) 40%, transparent);
   border-radius: var(--radius);
   background: var(--red-soft);
-  color: #ff8178;
+  color: var(--red-text);
   font-weight: 600;
   text-decoration: none;
 }
 
 .danger-line:hover {
-  background: rgba(240, 68, 56, 0.22);
+  background: color-mix(in srgb, var(--red) 22%, transparent);
 }
 
 .field-label {
@@ -1195,7 +1195,7 @@ body[data-app="citizen"]::after {
   align-self: flex-start;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.03);
+  background: color-mix(in srgb, var(--tint-base) 3%, transparent);
 }
 
 .stepper-btn {
@@ -1211,7 +1211,7 @@ body[data-app="citizen"]::after {
 }
 
 .stepper-btn:hover:not(:disabled) {
-  color: var(--orange-bright);
+  color: var(--orange-text);
 }
 
 .stepper-btn:disabled {
@@ -1231,7 +1231,7 @@ body[data-app="citizen"]::after {
   padding: 8px;
   border: 1px dashed var(--line-strong);
   border-radius: var(--radius);
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--sunken);
   color: var(--ink-soft);
   font: inherit;
   font-size: 14px;
@@ -1264,10 +1264,10 @@ body[data-app="citizen"]::after {
   width: 30px;
   height: 30px;
   border-radius: 50% 50% 50% 0;
-  border: 2px solid #fff;
+  border: 2px solid var(--marker-ring);
   background: var(--orange);
   transform: rotate(-45deg);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 3px 8px var(--shadow-color);
 }
 
 .marker-pin::after {
@@ -1279,7 +1279,7 @@ body[data-app="citizen"]::after {
   height: 10px;
   margin: -5px 0 0 -5px;
   border-radius: 50%;
-  background: #0b0b0c;
+  background: var(--marker-bg);
 }
 
 /* ---------- Sent ---------- */
@@ -1297,11 +1297,11 @@ body[data-app="citizen"]::after {
   height: 72px;
   margin: 0 auto 16px;
   border-radius: 50%;
-  border: 1px solid rgba(46, 211, 183, 0.5);
-  background: linear-gradient(160deg, rgba(46, 211, 183, 0.35), rgba(46, 211, 183, 0.08));
-  color: var(--teal-bright);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2) inset, 0 0 0 8px rgba(46, 211, 183, 0.06),
-    0 18px 30px -12px rgba(46, 211, 183, 0.6);
+  border: 1px solid color-mix(in srgb, var(--teal) 50%, transparent);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--teal) 35%, transparent), color-mix(in srgb, var(--teal) 8%, transparent));
+  color: var(--teal-text);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2) inset, 0 0 0 8px color-mix(in srgb, var(--teal) 6%, transparent),
+    0 18px 30px -12px color-mix(in srgb, var(--teal) 60%, transparent);
   animation: coin 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s backwards;
 }
 

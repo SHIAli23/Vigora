@@ -3,7 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#070708">
+  <meta name="theme-color" content="#070708" data-dark="#070708" data-light="#ffffff">
+  <script>
+    /* The theme before the first paint: the saved choice, otherwise the device setting. */
+    (function () {
+      var theme = null;
+      try { theme = localStorage.getItem("vigora.theme"); } catch (e) { /* storage blocked */ }
+      if (theme !== "light" && theme !== "dark") {
+        theme = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+      }
+      document.documentElement.setAttribute("data-theme", theme);
+      var bar = document.querySelector('meta[name="theme-color"]');
+      if (bar) bar.setAttribute("content", bar.getAttribute("data-" + theme));
+    })();
+  </script>
   <title>Vigora — Оператор 112</title>
   <link rel="icon" href="/citizen/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -16,7 +29,11 @@
   <!-- Login -->
   <main id="login-screen" class="login-page hidden">
     <div class="login-card">
-      <div class="wordmark">Vig<em>o</em>ra</div>
+      <button type="button" class="theme-toggle" data-theme-toggle aria-label="Светла тема" title="Светла тема">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <a class="wordmark" href="/" aria-label="Vigora — начална страница">Vig<em>o</em>ra</a>
       <p class="app-name">Оператор 112</p>
 
       <form id="login-form" novalidate>
@@ -46,7 +63,7 @@
   <div id="panel" class="panel hidden">
     <header class="topbar">
       <div class="brand">
-        <span class="wordmark">Vig<em>o</em>ra</span>
+        <a class="wordmark" href="/" aria-label="Vigora — начална страница">Vig<em>o</em>ra</a>
         <span class="brand-role">Оператор 112</span>
       </div>
 
@@ -60,6 +77,10 @@
       </dl>
 
       <div class="topbar-actions">
+        <button type="button" class="theme-toggle" data-theme-toggle aria-label="Светла тема" title="Светла тема">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
         <span id="conn" class="conn offline">Свързване…</span>
         <button type="button" class="btn btn-quiet btn-small" id="reset-demo">Нулирай демото</button>
         <button type="button" class="btn btn-quiet btn-small" id="logout">Изход</button>

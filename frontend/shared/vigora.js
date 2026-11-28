@@ -1,5 +1,8 @@
 /* Vigora — shared helpers for the citizen, operator and team apps.
  *
+ * Also the light/dark theme: any <button data-theme-toggle> switches it; maps follow it
+ * through vigora.css.
+ *
  * Every page sets <body data-app="citizen|operator|team">. The login result is kept in
  * sessionStorage, so each browser tab has its own login and several accounts can be
  * tested side by side in different tabs.
@@ -340,8 +343,84 @@
     return (meters / 1000).toFixed(1) + " км";
   }
 
+  // ---------- Theme ----------
+  //
+  // The theme is "light" or "dark" in <html data-theme>. A tiny script in each page's <head>
+  // sets it before the first paint (no flash); this code keeps it up to date afterwards.
+  // The choice is remembered in localStorage; without one, the device setting is followed.
+
+  var THEME_KEY = "vigora.theme";
+  var THEME_LABELS = { dark: "Светла тема", light: "Тъмна тема" }; // what the button switches to
+  var systemLight = window.matchMedia ? window.matchMedia("(prefers-color-scheme: light)") : null;
+  var themeListeners = [];
+
+  function storedTheme() {
+    try {
+      var theme = localStorage.getItem(THEME_KEY);
+      return theme === "light" || theme === "dark" ? theme : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function systemTheme() {
+    return systemLight && systemLight.matches ? "light" : "dark";
+  }
+
+  function getTheme() {
+    return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    // The browser bar on phones: each page lists its two colors on the meta tag.
+    var meta = document.querySelector('meta[name="theme-color"]');
+    var color = meta && meta.getAttribute("data-" + theme);
+    if (color) meta.setAttribute("content", color);
+    document.querySelectorAll("[data-theme-toggle]").forEach(function (button) {
+      button.setAttribute("aria-label", THEME_LABELS[theme]);
+      button.setAttribute("title", THEME_LABELS[theme]);
+    });
+    themeListeners.forEach(function (listener) { listener(theme); });
+  }
+
+  function setTheme(theme) {
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch (e) {
+      /* storage blocked: the theme still changes until the page is closed */
+    }
+    applyTheme(theme);
+  }
+
+  function toggleTheme() {
+    setTheme(getTheme() === "light" ? "dark" : "light");
+  }
+
+  function onThemeChange(listener) {
+    themeListeners.push(listener);
+  }
+
+  // Any <button data-theme-toggle>, also ones added later.
+  document.addEventListener("click", function (event) {
+    var button = event.target.closest && event.target.closest("[data-theme-toggle]");
+    if (button) toggleTheme();
+  });
+
+  // Follow the device while no choice is saved, and keep other open tabs in step.
+  if (systemLight && systemLight.addEventListener) {
+    systemLight.addEventListener("change", function () {
+      if (!storedTheme()) applyTheme(systemTheme());
+    });
+  }
+  window.addEventListener("storage", function (event) {
+    if (event.key === THEME_KEY) applyTheme(storedTheme() || systemTheme());
+  });
+
   // ---------- Map ----------
 
+  // OpenStreetMap tiles, as they are in the light theme. In the dark theme vigora.css darkens
+  // them with a filter, so every map follows the theme at once, without loading new tiles.
   function makeMap(element, options) {
     options = options || {};
     var map = L.map(element, {
@@ -352,7 +431,7 @@
     }).setView(options.center || SOFIA, options.zoom || 13);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
     return map;
   }
@@ -422,7 +501,17 @@
     incidentIcon: incidentIcon,
     teamIcon: teamIcon,
     meIcon: meIcon,
+    getTheme: getTheme,
+    setTheme: setTheme,
+    toggleTheme: toggleTheme,
+    onThemeChange: onThemeChange,
   };
 
   window.Vigora = Vigora;
+
+  // The <head> script already set the theme; this labels the buttons and sets the bar color.
+  // Without that script (an older page), the theme is chosen here instead.
+  applyTheme(
+    document.documentElement.hasAttribute("data-theme") ? getTheme() : storedTheme() || systemTheme()
+  );
 })();
